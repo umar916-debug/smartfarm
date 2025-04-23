@@ -1,9 +1,7 @@
 import streamlit as st
 import pandas as pd
 import datetime
-import plotly.express as px
 from utils.sheets_integration import get_sheet_data
-from assets.images import agricultural_sensor_images, farming_tech_images
 
 # Set page configuration
 st.set_page_config(
@@ -35,66 +33,70 @@ try:
         latest_data = df.iloc[-1].to_dict()
 
         # Display last updated timestamp
-        timestamp = latest_data.get('timestamp', datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
-        st.markdown(f"#### 🕒 Last Updated: `{timestamp}`")
+        timestamp_str = latest_data.get('timestamp')
+        if timestamp_str:
+            try:
+                parsed_timestamp = pd.to_datetime(timestamp_str)
+                timestamp = parsed_timestamp.strftime('%Y-%m-%d %H:%M:%S')
+            except:
+                timestamp = timestamp_str
+        else:
+            timestamp = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
-        # Display layout: sensor image + metrics
-        col1, col2 = st.columns([1, 3])
-        with col1:
-            st.image(agricultural_sensor_images[0], use_container_width=True, caption="Farm Sensor Overview")
+        st.markdown(f"### 🕒 Last Updated: `{timestamp}`")
 
-        with col2:
-            numeric_cols = df.select_dtypes(include=['float64', 'int64']).columns.tolist()
-            if 'timestamp' in numeric_cols:
-                numeric_cols.remove('timestamp')
+        # Display metrics in a neat layout
+        numeric_cols = df.select_dtypes(include=['float64', 'int64']).columns.tolist()
+        if 'timestamp' in numeric_cols:
+            numeric_cols.remove('timestamp')
 
-            metric_info = {
-                'temperature': {'unit': '°C', 'range': (15, 30), 'icon': '🌡️'},
-                'humidity': {'unit': '%', 'range': (40, 80), 'icon': '💧'},
-                'soil_moisture': {'unit': '%', 'range': (30, 70), 'icon': '🌱'},
-                'light_intensity': {'unit': 'lux', 'range': (10000, 50000), 'icon': '☀️'},
-                'ph': {'unit': 'pH', 'range': (5.5, 7.5), 'icon': '⚗️'},
-                'nitrogen': {'unit': 'mg/kg', 'range': (150, 300), 'icon': '🅝'},
-                'phosphorus': {'unit': 'mg/kg', 'range': (25, 50), 'icon': '🅟'},
-                'potassium': {'unit': 'mg/kg', 'range': (150, 300), 'icon': '🅚'},
-                'rainfall': {'unit': 'mm', 'range': (900, 1400), 'icon': '🌧️'},
-            }
+        metric_info = {
+            'temperature': {'unit': '°C', 'range': (15, 30), 'icon': '🌡️'},
+            'humidity': {'unit': '%', 'range': (40, 80), 'icon': '💧'},
+            'soil_moisture': {'unit': '%', 'range': (30, 70), 'icon': '🌱'},
+            'light_intensity': {'unit': 'lux', 'range': (10000, 50000), 'icon': '☀️'},
+            'ph': {'unit': 'pH', 'range': (5.5, 7.5), 'icon': '⚗️'},
+            'nitrogen': {'unit': 'mg/kg', 'range': (150, 300), 'icon': '🅝'},
+            'phosphorus': {'unit': 'mg/kg', 'range': (25, 50), 'icon': '🅟'},
+            'potassium': {'unit': 'mg/kg', 'range': (150, 300), 'icon': '🅚'},
+            'rainfall': {'unit': 'mm', 'range': (900, 1400), 'icon': '🌧️'},
+        }
 
-            alias_map = {
-                'temp': 'temperature',
-                'hum': 'humidity',
-                'soil_moist': 'soil_moisture',
-                'light': 'light_intensity',
-                'n': 'nitrogen',
-                'p': 'phosphorus',
-                'k': 'potassium',
-                'rain': 'rainfall'
-            }
+        alias_map = {
+            'temp': 'temperature',
+            'hum': 'humidity',
+            'soil_moist': 'soil_moisture',
+            'light': 'light_intensity',
+            'n': 'nitrogen',
+            'p': 'phosphorus',
+            'k': 'potassium',
+            'rain': 'rainfall'
+        }
 
-            metric_cols = st.columns(min(4, len(numeric_cols)))
-            for i, col_name in enumerate(numeric_cols):
-                name = alias_map.get(col_name, col_name)
-                info = metric_info.get(name, {'unit': '', 'range': (0, 100), 'icon': '📊'})
-                value = latest_data.get(col_name, 'N/A')
+        st.divider()
+        cols = st.columns(len(numeric_cols))
+        for i, col_name in enumerate(numeric_cols):
+            name = alias_map.get(col_name, col_name)
+            info = metric_info.get(name, {'unit': '', 'range': (0, 100), 'icon': '📊'})
+            value = latest_data.get(col_name, 'N/A')
 
-                if isinstance(value, (int, float)):
-                    formatted = f"{value} {info['unit']}"
-                    optimal = info['range'][0] <= value <= info['range'][1]
-                    delta = None
-                    if len(df) > 1:
-                        delta_val = value - df.iloc[-2][col_name]
-                        delta = f"{delta_val:+.2f} {info['unit']}"
-                else:
-                    formatted = str(value)
-                    delta = None
+            if isinstance(value, (int, float)):
+                formatted = f"{value} {info['unit']}"
+                delta = None
+                if len(df) > 1:
+                    delta_val = value - df.iloc[-2][col_name]
+                    delta = f"{delta_val:+.2f} {info['unit']}"
+            else:
+                formatted = str(value)
+                delta = None
 
-                with metric_cols[i % len(metric_cols)]:
-                    st.metric(
-                        label=f"{info['icon']} {name.replace('_', ' ').title()}",
-                        value=formatted,
-                        delta=delta,
-                        help=f"Optimal: {info['range'][0]} - {info['range'][1]} {info['unit']}"
-                    )
+            with cols[i % len(cols)]:
+                st.metric(
+                    label=f"{info['icon']} {name.replace('_', ' ').title()}",
+                    value=formatted,
+                    delta=delta,
+                    help=f"Optimal: {info['range'][0]} - {info['range'][1]} {info['unit']}"
+                )
 
         # Refresh Button
         st.divider()
@@ -102,11 +104,9 @@ try:
 
     else:
         st.error("No data found. Please check your Google Sheet configuration.")
-        st.image(farming_tech_images[1], caption="Smart Farming System", use_container_width=True)
 
 except Exception as e:
     st.error(f"❌ Error fetching data: {str(e)}")
-    st.image(farming_tech_images[1], caption="Smart Farming System", use_container_width=True)
 
 # Footer Info
 st.divider()
