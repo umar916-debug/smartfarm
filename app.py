@@ -41,7 +41,7 @@ st.markdown("""
     .metric-container {
         margin-bottom: 2rem;
     }
-    .css-1d391kg {  /* Makes dataframe font larger */
+    .css-1d391kg {
         font-size: 16px !important;
     }
     .caption {
@@ -57,13 +57,13 @@ st.markdown("""
 st.markdown("<h1 class='main-header'>🌱 Smart Farming Dashboard</h1>", unsafe_allow_html=True)
 
 try:
-    image = Image.open("assets/IoT-in-Agriculture-scaled.jpg")
+    image = Image.open("assets/smart_farming_latest.jpg")
     st.image(image, use_container_width=True)
     st.markdown("<div class='caption'>Smart Farming - High Quality Agriculture</div>", unsafe_allow_html=True)
 except Exception as e:
     st.warning("Header image could not be loaded. Make sure the image is placed inside the 'assets/' folder.")
 
-# Prompt user for credentials manually
+# Google Sheets Manual Input
 with st.expander("🔐 Enter Google Sheets Credentials", expanded=True):
     SPREADSHEET_ID = st.text_input("Spreadsheet ID", value=SPREADSHEET_ID)
     SHEET_NAME = st.text_input("Sheet Name", value=SHEET_NAME)
@@ -101,6 +101,5 @@ with st.expander("🔐 Enter Google Sheets Credentials", expanded=True):
                     st.image(farming_tech_images[2], use_container_width=True, caption="Smart Farming Visualization")
                 else:
                     st.error("Google Sheet is empty or couldn't be read. Check Sheet name and structure.")
-
             except Exception as e:
                 st.error(f"Failed to load data: {e}")
