@@ -100,10 +100,10 @@ else:
                             # Determine if the value is in the good range
                             if value < info['good_range'][0]:
                                 delta_color = "inverse"  # Lower than ideal (red)
-                                delta_description = "Below optimal range"
+                                delta_description = f"Below optimal range ({info['good_range'][0]} - {info['good_range'][1]} {info['unit']})"
                             elif value > info['good_range'][1]:
                                 delta_color = "inverse"  # Higher than ideal (red)
-                                delta_description = "Above optimal range"
+                                delta_description = f"Above optimal range ({info['good_range'][0]} - {info['good_range'][1]} {info['unit']})"
                             else:
                                 delta_color = "normal"  # Within ideal range (green)
                                 delta_description = "Within optimal range"
@@ -202,19 +202,19 @@ with st.expander("About the Live Data Monitoring"):
     
     ### Data Refresh
     
-    - The dashboard shows the most recent data point from your connected sensors
-    - Click the 'Refresh Data' button to fetch the latest readings
-    - Optimal ranges are displayed to help you quickly identify issues
+    - The dashboard shows the most recent data point from your connected sensors.
+    - Click the 'Refresh Data' button to fetch the latest readings.
+    - Optimal ranges are displayed to help you quickly identify potential issues.
     
     ### Monitored Parameters
     
     Depending on your sensor setup, the dashboard can display various metrics including:
     
-    - Temperature: Ambient air temperature around your crops
-    - Humidity: Relative humidity in the air
-    - Soil Moisture: Water content in the soil
-    - Light Intensity: Amount of sunlight reaching the crops
-    - pH: Acidity or alkalinity of the soil
-    - NPK: Nitrogen, Phosphorus, and Potassium levels in the soil
-    - Rainfall: Recent precipitation measurements
+    - Temperature: Ambient air temperature around your crops.
+    - Humidity: Relative humidity in the air.
+    - Soil Moisture: Water content in the soil.
+    - Light Intensity: Amount of sunlight reaching the crops.
+    - pH: Acidity or alkalinity of the soil.
+    - NPK: Nitrogen, Phosphorus, and Potassium levels in the soil.
+    - Rainfall: Recent precipitation measurements.
     """)
