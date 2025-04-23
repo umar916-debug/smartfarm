@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import plotly.express as px
+import time
 
 from utils.sheets_integration import get_sheet_data
 from utils.ml_models import train_crop_recommendation_model, predict_crop
@@ -30,7 +31,7 @@ def display_general_recommendations(params):
     elif 6.5 < pH <= 7.5:
         recs.append("🌻 **Neutral soil**: Wheat, Barley, Sunflowers, Cucumber")
     else:
-        recs.append("🥬 **Alkaline soil**: Asparagus, Beets, Cabbage")
+        recs.append("🦬 **Alkaline soil**: Asparagus, Beets, Cabbage")
 
     if temp < 15:
         recs.append("❄️ **Cool temperatures**: Lettuce, Kale, Spinach, Peas")
@@ -47,6 +48,12 @@ if 'google_sheets_configured' not in st.session_state or not st.session_state.go
     st.warning("⚠️ Google Sheets connection not configured.")
     st.page_link("app.py", label="Go to Home Page", icon="🏠")
     st.stop()
+
+# --- Auto-refresh every 60 seconds ---
+REFRESH_INTERVAL = 60
+if 'last_refresh' not in st.session_state or time.time() - st.session_state.last_refresh > REFRESH_INTERVAL:
+    st.session_state.last_refresh = time.time()
+    st.experimental_rerun()
 
 try:
     with st.spinner("Loading data and training model..."):
@@ -94,20 +101,20 @@ try:
         elif not df.empty:
             latest_row = df.iloc[-1]
 
-        def get_val(col):
-            return float(latest_row[col]) if latest_row is not None and col in latest_row else default_values[col]
+        def get_param(name, default):
+            return float(latest_row[name]) if latest_row is not None and name in latest_row else default
 
         st.subheader("Enter Your Farm Parameters")
         c1, c2, c3 = st.columns(3)
         with c1:
-            n = st.number_input("Nitrogen (mg/kg)", 0, 200, int(get_val("nitrogen")))
-            p = st.number_input("Phosphorus (mg/kg)", 0, 200, int(get_val("phosphorus")))
-            k = st.number_input("Potassium (mg/kg)", 0, 200, int(get_val("potassium")))
+            n = st.number_input("Nitrogen (mg/kg)", 0, 200, int(get_param("nitrogen", 50)))
+            p = st.number_input("Phosphorus (mg/kg)", 0, 200, int(get_param("phosphorus", 30)))
+            k = st.number_input("Potassium (mg/kg)", 0, 200, int(get_param("potassium", 30)))
         with c2:
-            temp = st.number_input("Temperature (°C)", 0.0, 50.0, float(get_val("temperature")))
-            hum = st.number_input("Humidity (%)", 0.0, 100.0, float(get_val("humidity")))
+            temp = st.number_input("Temperature (°C)", 0.0, 50.0, get_param("temperature", 25))
+            hum = st.number_input("Humidity (%)", 0.0, 100.0, get_param("humidity", 60))
         with c3:
-            ph = st.number_input("pH", 0.0, 14.0, float(get_val("ph")))
+            ph = st.number_input("pH", 0.0, 14.0, get_param("ph", 6.5))
 
         input_data = {
             'nitrogen': n, 'phosphorus': p, 'potassium': k,
