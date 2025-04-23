@@ -86,12 +86,9 @@ else:
                     df = get_sheet_data(SPREADSHEET_ID, SHEET_NAME, CREDENTIALS_JSON)
 
                 if df is not None and not df.empty:
-                    st.success("✅ Data loaded successfully from Google Sheets")
-                    st.image(farming_tech_images[1], use_container_width=True, caption="Live Sensor Feed")
-                    st.dataframe(df.head(), use_container_width=True)
-
-                    st.markdown("<h3 style='color:#4CAF50;'>📊 Latest Farm Data</h3>", unsafe_allow_html=True)
-                    latest = df.sort_values("timestamp", ascending=False).iloc[0]
+                    st.session_state["spreadsheet_id"] = SPREADSHEET_ID
+                    st.session_state["sheet_name"] = SHEET_NAME
+                    st.session_state["credentials_json"] = CREDENTIALS_JSON
 
                     st.markdown("<div class='metric-container'>", unsafe_allow_html=True)
                     col1, col2, col3 = st.columns(3)
