@@ -1,18 +1,19 @@
 import streamlit as st
 import pandas as pd
+import datetime
 from utils.sheets_integration import get_sheet_data
 
-# Config
-st.set_page_config(page_title="Live Farm Sensor Dashboard", page_icon="🌿", layout="wide")
+# Page config
+st.set_page_config(page_title="Live Farm Data | Smart Farming", page_icon="📊", layout="wide")
 
 st.markdown("""
 <h1 style='font-size: 3rem; font-weight: 700; color: #2e7d32;'>🌿 Live Farm Sensor Dashboard</h1>
 <p style='font-size: 1.1rem; color: #ccc;'>Real-time sensor readings from your smart farm</p>
 """, unsafe_allow_html=True)
 
-# Check if connection is set
+# Check connection
 if not all(k in st.session_state for k in ("spreadsheet_id", "sheet_name", "credentials_json")):
-    st.warning("⚠️ Please configure your Google Sheets connection on the Home page.")
+    st.warning("⚠️ Google Sheets not connected. Please configure it on the Home page.")
     st.page_link("app.py", label="🏠 Go to Home Page")
     st.stop()
 
@@ -24,19 +25,14 @@ try:
     )
 
     if df is not None and not df.empty:
-        # Normalize columns
-        original_columns = df.columns.tolist()
-        df.columns = df.columns.str.strip()
-        col_map = {col.lower(): col for col in df.columns}
-        latest = df.iloc[-1]
+        latest_data = df.iloc[-1].to_dict()
 
         # Timestamp
-        timestamp_raw = latest.get(col_map.get("timestamp", ""), "Unknown")
+        timestamp = latest_data.get('Timestamp') or latest_data.get('timestamp') or "Unknown"
         try:
-            parsed_ts = pd.to_datetime(timestamp_raw)
-            timestamp = parsed_ts.strftime("%Y-%m-%d %H:%M:%S")
+            timestamp = pd.to_datetime(timestamp).strftime("%Y-%m-%d %H:%M:%S")
         except:
-            timestamp = "Unknown (timestamp column not found)"
+            pass
 
         st.markdown(f"""
             <div style='margin-top: 1.5rem; padding: 1rem 1.5rem; border-left: 5px solid #4CAF50; background-color: #f0f4f0; border-radius: 8px; display: flex; align-items: center;'>
@@ -47,26 +43,24 @@ try:
         """, unsafe_allow_html=True)
 
         # Metrics
-        def get_val(key, suffix=""):
-            col = col_map.get(key.lower())
-            return f"{latest[col]}{suffix}" if col and pd.notna(latest[col]) else "N/A"
+        def val(key, suffix=""):
+            v = latest_data.get(key)
+            return f"{v} {suffix}" if pd.notna(v) else "N/A"
 
-        st.markdown("### 📊 Sensor Readings")
         c1, c2, c3 = st.columns(3)
-        c1.metric("🌡️ Temperature", get_val("temperature", " °C"))
-        c2.metric("💧 Humidity", get_val("humidity", " %"))
-        c3.metric("🧪 pH Level", get_val("ph"))
+        c1.metric("🌡️ Temperature", val("Temperature", "°C"))
+        c2.metric("💧 Humidity", val("Humidity", "%"))
+        c3.metric("🧪 pH Level", val("pH"))
 
         c4, c5, c6 = st.columns(3)
-        c4.metric("🌿 Nitrogen (N)", get_val("n"))
-        c5.metric("🌿 Phosphorus (P)", get_val("p"))
-        c6.metric("🌿 Potassium (K)", get_val("k"))
+        c4.metric("🌿 Nitrogen (N)", val("N"))
+        c5.metric("🌿 Phosphorus (P)", val("P"))
+        c6.metric("🌿 Potassium (K)", val("K"))
 
-        st.markdown("---")
         if st.button("🔄 Refresh Data"):
             st.rerun()
     else:
-        st.error("No data found in your sheet. Make sure it's correctly formatted.")
+        st.error("No data found. Please check your Google Sheet structure.")
 
 except Exception as e:
-    st.error(f"❌ Error fetching data: {e}")
+    st.error(f"❌ Error: {e}")
