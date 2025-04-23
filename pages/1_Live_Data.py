@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 from utils.sheets_integration import get_sheet_data
 
-# Page config
+# Page configuration
 st.set_page_config(
     page_title="Live Farm Data | Smart Farming",
     page_icon="📊",
@@ -14,13 +14,12 @@ st.markdown("""
 <p style='font-size: 1.1rem; color: #ccc;'>Real-time sensor readings from your smart farm</p>
 """, unsafe_allow_html=True)
 
-# Google Sheets connection check
+# Check Google Sheets config
 if not all(k in st.session_state for k in ("spreadsheet_id", "sheet_name", "credentials_json")):
     st.warning("⚠️ Google Sheets connection not configured. Please go to the home page to set up your connection.")
     st.page_link("app.py", label="🏠 Go to Home Page")
     st.stop()
 
-# Try fetching and displaying data
 try:
     with st.spinner("Fetching the latest farm data..."):
         df = get_sheet_data(
@@ -31,15 +30,19 @@ try:
 
     if df is not None and not df.empty:
         # Normalize column names
-        df.columns = df.columns.str.strip().str.lower()
+        df.columns = df.columns.str.strip()
+        df.columns = df.columns.str.lower()
 
         latest = df.iloc[-1]
 
+        # Create a lowercase->original map to access correct casing
+        col_map = {col.lower(): col for col in df.columns}
+
         # --- TIMESTAMP display ---
-        timestamp_str = latest.get("timestamp", "Unknown")
+        timestamp_raw = latest.get(col_map.get("timestamp", ""), "Unknown")
         try:
-            parsed_timestamp = pd.to_datetime(timestamp_str)
-            timestamp = parsed_timestamp.strftime('%Y-%m-%d %H:%M:%S')
+            timestamp_parsed = pd.to_datetime(timestamp_raw)
+            timestamp = timestamp_parsed.strftime('%Y-%m-%d %H:%M:%S')
         except:
             timestamp = "Unknown (timestamp format error)"
 
@@ -51,22 +54,20 @@ try:
             </div>
         """, unsafe_allow_html=True)
 
-        # --- METRICS display ---
-        st.markdown("<div class='metric-container'>", unsafe_allow_html=True)
+        # --- Metrics section ---
         col1, col2, col3 = st.columns(3)
-        col1.metric("🌡️ Temperature", f"{latest.get('temperature', 'N/A')} °C")
-        col2.metric("💧 Humidity", f"{latest.get('humidity', 'N/A')} %")
-        col3.metric("🧪 pH Level", latest.get('ph', 'N/A'))
+        col1.metric("🌡️ Temperature", f"{latest.get(col_map.get('temperature', ''), 'N/A')} °C")
+        col2.metric("💧 Humidity", f"{latest.get(col_map.get('humidity', ''), 'N/A')} %")
+        col3.metric("🧪 pH Level", latest.get(col_map.get('ph', ''), 'N/A'))
 
         col4, col5, col6 = st.columns(3)
-        col4.metric("🌿 Nitrogen (N)", latest.get('n', 'N/A'))
-        col5.metric("🌿 Phosphorus (P)", latest.get('p', 'N/A'))
-        col6.metric("🌿 Potassium (K)", latest.get('k', 'N/A'))
-        st.markdown("</div>", unsafe_allow_html=True)
+        col4.metric("🌿 Nitrogen (N)", latest.get(col_map.get('n', ''), 'N/A'))
+        col5.metric("🌿 Phosphorus (P)", latest.get(col_map.get('p', ''), 'N/A'))
+        col6.metric("🌿 Potassium (K)", latest.get(col_map.get('k', ''), 'N/A'))
 
-        # --- REFRESH BUTTON ---
+        # --- Refresh Button ---
         if st.button("🔄 Refresh Data"):
-            st.experimental_rerun()  # safe to use for now, works until st.rerun is public
+            st.rerun()
 
     else:
         st.error("No data found in your Google Sheet.")
