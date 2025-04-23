@@ -117,27 +117,45 @@ try:
         def get_param(name, default):
             return float(latest_row[name]) if latest_row is not None and name in latest_row else default
 
+        # Initialize/reset session state
+        if 'input_params' not in st.session_state:
+            st.session_state.input_params = {
+                k: get_param(k, default_values[k]) for k in default_values
+            }
+
         st.subheader("📥 Enter Your Farm Parameters")
         c1, c2, c3 = st.columns(3)
         with c1:
-            n = st.number_input("Nitrogen (mg/kg)", min_value=0, max_value=200, value=int(get_param("nitrogen", 50)))
-            p = st.number_input("Phosphorus (mg/kg)", min_value=0, max_value=200, value=int(get_param("phosphorus", 30)))
-            k = st.number_input("Potassium (mg/kg)", min_value=0, max_value=200, value=int(get_param("potassium", 30)))
+            n = st.number_input("Nitrogen (mg/kg)", min_value=0, max_value=200, value=int(st.session_state.input_params["nitrogen"]))
+            p = st.number_input("Phosphorus (mg/kg)", min_value=0, max_value=200, value=int(st.session_state.input_params["phosphorus"]))
+            k = st.number_input("Potassium (mg/kg)", min_value=0, max_value=200, value=int(st.session_state.input_params["potassium"]))
         with c2:
-            temp = st.number_input("Temperature (°C)", min_value=0.0, max_value=50.0, value=get_param("temperature", 25.0))
-            hum = st.number_input("Humidity (%)", min_value=0.0, max_value=100.0, value=get_param("humidity", 60.0))
+            temp = st.number_input("Temperature (°C)", min_value=0.0, max_value=50.0, value=st.session_state.input_params["temperature"])
+            hum = st.number_input("Humidity (%)", min_value=0.0, max_value=100.0, value=st.session_state.input_params["humidity"])
         with c3:
-            ph = st.number_input("pH", min_value=0.0, max_value=14.0, value=get_param("ph", 6.5))
+            ph = st.number_input("pH", min_value=0.0, max_value=14.0, value=st.session_state.input_params["ph"])
 
         input_data = {
             'nitrogen': n, 'phosphorus': p, 'potassium': k,
             'temperature': temp, 'humidity': hum, 'ph': ph
         }
 
+        # Save updated values
+        st.session_state.input_params = input_data
+
         st.subheader("📊 Used Parameters")
         st.dataframe(pd.DataFrame.from_dict(input_data, orient='index', columns=['Value']).style.format("{:.2f}"), use_container_width=True)
 
-        if st.button("🌱 Get Crop Recommendations"):
+        # Buttons
+        col_btn1, col_btn2 = st.columns([3, 1])
+        with col_btn1:
+            get_recommend = st.button("🌱 Get Crop Recommendations")
+        with col_btn2:
+            if st.button("🔄 Reset Parameters"):
+                st.session_state.input_params = default_values
+                st.rerun()
+
+        if get_recommend:
             if not missing_features:
                 try:
                     model, features, crops, accuracy = train_crop_recommendation_model(df)
