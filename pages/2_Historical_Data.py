@@ -20,7 +20,6 @@ st.title("📈 Historical Farm Data Analysis")
 if st.button("🔄 Refresh Data"):
     st.experimental_rerun()
 
-
 # Check if Google Sheets is configured
 if 'google_sheets_configured' not in st.session_state or not st.session_state.google_sheets_configured:
     st.warning("⚠️ Google Sheets connection not configured. Please go to the home page to set up your connection.")
@@ -54,14 +53,12 @@ else:
                         st.metric("Date Range", date_range)
                 
                 with metrics_col2:
-                    # Display image
                     st.image(farm_crop_images[3], use_container_width=True)
                 
                 # Filter data by date range if timestamp exists
                 if 'timestamp' in hist_df.columns:
                     hist_df['timestamp'] = pd.to_datetime(hist_df['timestamp'], utc=True).dt.tz_convert('Asia/Kolkata')
 
-                    
                     st.subheader("Filter Data")
                     
                     # Date range filter
