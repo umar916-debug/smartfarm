@@ -191,9 +191,9 @@ else:
                         st.markdown("""
                         ### Interpreting the Correlation Matrix
                         
-                        - **Strong Positive Correlation (close to 1)**: As one variable increases, the other tends to increase
-                        - **Strong Negative Correlation (close to -1)**: As one variable increases, the other tends to decrease
-                        - **No Correlation (close to 0)**: No apparent relationship between variables
+                        - **Strong Positive Correlation (close to 1)**: As one variable increases, the other tends to increase.
+                        - **Strong Negative Correlation (close to -1)**: As one variable increases, the other tends to decrease.
+                        - **No Correlation (close to 0)**: No apparent relationship between variables.
                         
                         Strong correlations can reveal important relationships between different farm metrics.
                         """)
@@ -314,17 +314,16 @@ with st.expander("About Historical Data Analysis"):
     
     Analyzing historical farm data can provide valuable insights into:
     
-    - **Long-term trends**: Identify gradual changes in soil health, moisture levels, and other key metrics
-    - **Seasonal patterns**: Understand how your farm conditions vary throughout the year
-    - **Correlations**: Discover relationships between different metrics that can inform better farming decisions
-    - **Anomalies**: Detect unusual events or outliers that may require attention
+    - **Long-term trends:** Identify gradual changes in soil health, moisture levels, and other key metrics.
+    - **Seasonal patterns:** Understand how your farm conditions vary throughout the year.
+    - **Correlations:** Discover relationships between different metrics that can inform better farming decisions.
+    - **Anomalies:** Detect unusual events or outliers that may require attention.
     
     ### How to Use This Analysis
     
-    1. **Time Series Analysis**: Monitor how metrics change over time to identify trends
-    2. **Correlation Analysis**: Understand how different farm metrics relate to each other
-    3. **Statistical Summary**: Get a comprehensive overview of your farm data distribution
+    1. **Time Series Analysis:** Monitor how metrics change over time to identify trends.
+    2. **Correlation Analysis:** Understand how different farm metrics relate to each other.
+    3. **Statistical Summary:** Get a comprehensive overview of your farm data distribution.
     
-    Use these insights to make data-driven decisions for optimizing crop yields, resource allocation,
-    and overall farm management.
+    Use these insights to make data-driven decisions for optimizing crop yields, resource allocation, and overall farm management.
     """)
