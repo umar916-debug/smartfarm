@@ -71,7 +71,7 @@ else:
                     """)
                 
                 with intro_col2:
-                    st.image(farm_crop_images[5], use_container_width=True)
+                    st.image(farm_crop_images[5], use_column_width=True)
                 
                 # Tab interface for different recommendation methods
                 recom_tab1, recom_tab2 = st.tabs(["Get Recommendations", "Parameter Information"])
@@ -106,49 +106,47 @@ else:
                         has_model = True
                     
                     # Create input form for parameter values
-                # Create input form for parameter values
-st.subheader("Enter Your Farm Parameters")
+                    st.subheader("Enter Your Farm Parameters")
 
-# Get the latest row from the DataFrame based on timestamp
-latest_row = df.sort_values("timestamp", ascending=False).iloc[0]
+                    # Get the latest row from the DataFrame based on timestamp
+                    latest_row = df.sort_values("timestamp", ascending=False).iloc[0]
 
-# Set up columns for input form
-col1, col2, col3 = st.columns(3)
+                    # Set up columns for input form
+                    col1, col2, col3 = st.columns(3)
 
-with col1:
-    n_value = st.number_input("Nitrogen (N) content (mg/kg)", 
-                              min_value=0, max_value=200, 
-                              value=int(latest_row["nitrogen"]),
-                              help="Nitrogen content in soil (mg/kg)")
+                    with col1:
+                        n_value = st.number_input("Nitrogen (N) content (mg/kg)", 
+                                                min_value=0, max_value=200, 
+                                                value=int(latest_row["nitrogen"]),
+                                                help="Nitrogen content in soil (mg/kg)")
 
-    p_value = st.number_input("Phosphorus (P) content (mg/kg)", 
-                              min_value=0, max_value=200, 
-                              value=int(latest_row["phosphorus"]),
-                              help="Phosphorus content in soil (mg/kg)")
+                        p_value = st.number_input("Phosphorus (P) content (mg/kg)", 
+                                                min_value=0, max_value=200, 
+                                                value=int(latest_row["phosphorus"]),
+                                                help="Phosphorus content in soil (mg/kg)")
 
-    k_value = st.number_input("Potassium (K) content (mg/kg)", 
-                              min_value=0, max_value=200, 
-                              value=int(latest_row["potassium"]),
-                              help="Potassium content in soil (mg/kg)")
+                        k_value = st.number_input("Potassium (K) content (mg/kg)", 
+                                                min_value=0, max_value=200, 
+                                                value=int(latest_row["potassium"]),
+                                                help="Potassium content in soil (mg/kg)")
 
-with col2:
-    temp_value = st.number_input("Temperature (°C)", 
-                                 min_value=0.0, max_value=50.0, 
-                                 value=float(latest_row["temperature"]),
-                                 help="Average temperature in Celsius")
+                    with col2:
+                        temp_value = st.number_input("Temperature (°C)", 
+                                                    min_value=0.0, max_value=50.0, 
+                                                    value=float(latest_row["temperature"]),
+                                                    help="Average temperature in Celsius")
 
-    humidity_value = st.number_input("Humidity (%)", 
-                                     min_value=0.0, max_value=100.0, 
-                                     value=float(latest_row["humidity"]),
-                                     help="Relative humidity percentage")
+                        humidity_value = st.number_input("Humidity (%)", 
+                                                        min_value=0.0, max_value=100.0, 
+                                                        value=float(latest_row["humidity"]),
+                                                        help="Relative humidity percentage")
 
-with col3:
-    ph_value = st.number_input("pH value", 
-                               min_value=0.0, max_value=14.0, 
-                               value=float(latest_row["ph"]),
-                               help="pH level of soil (0-14)")
+                    with col3:
+                        ph_value = st.number_input("pH value", 
+                                                  min_value=0.0, max_value=14.0, 
+                                                  value=float(latest_row["ph"]),
+                                                  help="pH level of soil (0-14)")
 
-                    
                     # Button to get recommendations
                     if st.button("Get Crop Recommendations"):
                         # Prepare input data (removed rainfall)
