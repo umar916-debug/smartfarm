@@ -42,7 +42,13 @@ st.markdown("""
 
 # Title and header image
 st.markdown("<h1 class='main-header'>🌱 Smart Farming Dashboard</h1>", unsafe_allow_html=True)
-st.image("/mnt/data/IoT-in-Agriculture-scaled.jpg", use_container_width=True, caption="Smart Farming - High Quality Agriculture")
+from PIL import Image
+
+try:
+    image = Image.open("IoT-in-Agriculture-scaled.jpg")
+    st.image(image, use_container_width=True, caption="Smart Farming - High Quality Agriculture")
+except Exception as e:
+    st.warning("Header image could not be loaded. Make sure the image is present in the app folder.")
 
 # Prompt user for credentials manually
 with st.expander("🔐 Enter Google Sheets Credentials", expanded=True):
