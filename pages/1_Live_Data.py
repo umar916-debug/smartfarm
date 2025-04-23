@@ -38,8 +38,8 @@ try:
         timestamp_str = latest_data.get('timestamp')
         if timestamp_str:
             try:
-                parsed_timestamp = pd.to_datetime(timestamp_str)
-                timestamp = parsed_timestamp.strftime('%Y-%m-%d %H:%M:%S')
+                parsed_timestamp = pd.to_datetime(timestamp_str, utc=True)
+                timestamp = parsed_timestamp.tz_convert("Asia/Kolkata").strftime('%Y-%m-%d %H:%M:%S')
             except:
                 timestamp = timestamp_str
         else:
