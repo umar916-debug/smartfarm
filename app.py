@@ -42,7 +42,7 @@ st.markdown("""
 
 # Title and header image
 st.markdown("<h1 class='main-header'>🌱 Smart Farming Dashboard</h1>", unsafe_allow_html=True)
-st.image(farm_crop_images[0], use_container_width=True, caption="Smart Farm Monitoring")
+st.image("/mnt/data/IoT-in-Agriculture-scaled.jpg", use_container_width=True, caption="Smart Farming - High Quality Agriculture")
 
 # Prompt user for credentials manually
 with st.expander("🔐 Enter Google Sheets Credentials", expanded=True):
