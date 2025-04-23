@@ -11,8 +11,10 @@ st.set_page_config(
 )
 
 # Page title
-st.title("🌿 Live Farm Sensor Dashboard")
-st.caption("Real-time sensor readings from your smart farm")
+st.markdown("""
+    <h1 style='font-size: 2.8rem;'>🌿 Live Farm Sensor Dashboard</h1>
+    <p style='font-size: 1.1rem; color: gray;'>Real-time sensor readings from your smart farm</p>
+""", unsafe_allow_html=True)
 
 # Check Google Sheets config
 if 'google_sheets_configured' not in st.session_state or not st.session_state.google_sheets_configured:
@@ -43,9 +45,14 @@ try:
         else:
             timestamp = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
-        st.markdown(f"### 🕒 Last Updated: `{timestamp}`")
+        st.markdown(f"""
+            <div style='font-size: 1.2rem; margin-top: 1rem;'>
+                🕒 <strong>Last Updated:</strong>
+                <code style='background-color: #f0f0f0; padding: 4px 8px; border-radius: 5px;'>{timestamp}</code>
+            </div>
+        """, unsafe_allow_html=True)
 
-        # Display metrics in a neat layout
+        # Display metrics in a grid layout
         numeric_cols = df.select_dtypes(include=['float64', 'int64']).columns.tolist()
         if 'timestamp' in numeric_cols:
             numeric_cols.remove('timestamp')
@@ -73,34 +80,36 @@ try:
             'rain': 'rainfall'
         }
 
-        st.divider()
-        cols = st.columns(len(numeric_cols))
-        for i, col_name in enumerate(numeric_cols):
-            name = alias_map.get(col_name, col_name)
-            info = metric_info.get(name, {'unit': '', 'range': (0, 100), 'icon': '📊'})
-            value = latest_data.get(col_name, 'N/A')
+        st.markdown("""<hr style='margin-top: 1rem; margin-bottom: 1.5rem;'>""", unsafe_allow_html=True)
 
-            if isinstance(value, (int, float)):
-                formatted = f"{value} {info['unit']}"
-                delta = None
-                if len(df) > 1:
-                    delta_val = value - df.iloc[-2][col_name]
-                    delta = f"{delta_val:+.2f} {info['unit']}"
-            else:
-                formatted = str(value)
-                delta = None
+        col_chunks = [numeric_cols[i:i + 3] for i in range(0, len(numeric_cols), 3)]
+        for chunk in col_chunks:
+            cols = st.columns(len(chunk))
+            for i, col_name in enumerate(chunk):
+                name = alias_map.get(col_name, col_name)
+                info = metric_info.get(name, {'unit': '', 'range': (0, 100), 'icon': '📊'})
+                value = latest_data.get(col_name, 'N/A')
 
-            with cols[i % len(cols)]:
-                st.metric(
-                    label=f"{info['icon']} {name.replace('_', ' ').title()}",
-                    value=formatted,
-                    delta=delta,
-                    help=f"Optimal: {info['range'][0]} - {info['range'][1]} {info['unit']}"
-                )
+                if isinstance(value, (int, float)):
+                    formatted = f"{value} {info['unit']}"
+                    delta = None
+                    if len(df) > 1:
+                        delta_val = value - df.iloc[-2][col_name]
+                        delta = f"{delta_val:+.2f} {info['unit']}"
+                else:
+                    formatted = str(value)
+                    delta = None
 
-        # Refresh Button
-        st.divider()
-        st.button("🔄 Refresh Data", on_click=st.rerun)
+                with cols[i]:
+                    st.metric(
+                        label=f"{info['icon']} {name.replace('_', ' ').title()}",
+                        value=formatted,
+                        delta=delta,
+                        help=f"Optimal: {info['range'][0]} - {info['range'][1]} {info['unit']}"
+                    )
+
+        st.markdown("""<hr style='margin-top: 1.5rem;'>""", unsafe_allow_html=True)
+        st.button("🔄 Refresh Data", on_click=lambda: st.experimental_rerun())
 
     else:
         st.error("No data found. Please check your Google Sheet configuration.")
@@ -109,7 +118,7 @@ except Exception as e:
     st.error(f"❌ Error fetching data: {str(e)}")
 
 # Footer Info
-st.divider()
+st.markdown("""<hr style='margin-top: 2rem;'>""", unsafe_allow_html=True)
 with st.expander("ℹ️ About This Dashboard"):
     st.markdown("""
     This dashboard displays the most recent sensor data from your connected smart farming system. 
