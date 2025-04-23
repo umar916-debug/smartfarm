@@ -10,6 +10,44 @@ st.set_page_config(
     layout="wide"
 )
 
+# Inject custom CSS for styling
+st.markdown("""
+<style>
+    .block-container {
+        padding-top: 2rem;
+        padding-bottom: 2rem;
+        font-family: 'Segoe UI', sans-serif;
+    }
+    .metric-box {
+        background-color: #f9f9f9;
+        padding: 1rem;
+        border-radius: 15px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        margin-bottom: 1rem;
+        text-align: center;
+    }
+    .metric-label {
+        font-size: 1rem;
+        font-weight: 600;
+        color: #444;
+    }
+    .metric-value {
+        font-size: 1.6rem;
+        font-weight: bold;
+        color: #222;
+    }
+    .metric-delta {
+        font-size: 0.9rem;
+        color: #888;
+    }
+    .stButton > button {
+        width: 100%;
+        border-radius: 8px;
+        font-weight: 600;
+    }
+</style>
+""", unsafe_allow_html=True)
+
 # Page title
 st.title("📊 Live Farm Data Monitoring")
 
@@ -81,15 +119,16 @@ else:
                         formatted_value = str(value)
                         delta = None
                         delta_color = "off"
+                        delta_desc = ""
 
                     with metric_cols[i % len(metric_cols)]:
-                        st.metric(
-                            label=f"{info['icon']} {display_name.replace('_', ' ').title()}",
-                            value=formatted_value,
-                            delta=delta,
-                            delta_color=delta_color,
-                            help=f"Range: {info['good_range'][0]}–{info['good_range'][1]} {info['unit']} ({delta_desc})"
-                        )
+                        st.markdown(f"""
+                        <div class="metric-box">
+                            <div class="metric-label">{info['icon']} {display_name.replace('_', ' ').title()}</div>
+                            <div class="metric-value">{formatted_value}</div>
+                            <div class="metric-delta">{delta or ''} <span style='color: gray;'>({delta_desc})</span></div>
+                        </div>
+                        """, unsafe_allow_html=True)
 
                 # Refresh button
                 if st.button("🔄 Refresh Data"):
