@@ -41,7 +41,7 @@ st.markdown("""
     .metric-container {
         margin-bottom: 2rem;
     }
-    .css-1d391kg {
+    .css-1d391kg {  /* Makes dataframe font larger */
         font-size: 16px !important;
     }
     .caption {
@@ -63,8 +63,15 @@ try:
 except Exception as e:
     st.warning("Header image could not be loaded. Make sure the image is placed inside the 'assets/' folder.")
 
-# Google Sheets Manual Input
+# Prompt user for credentials manually
 with st.expander("🔐 Enter Google Sheets Credentials", expanded=True):
+    USE_URL = st.toggle("Use Google Sheet URL instead of ID", value=False)
+if USE_URL:
+    SHEET_URL = st.text_input("Google Sheet URL")
+    import re
+    match = re.search(r'/d/([a-zA-Z0-9-_]+)', SHEET_URL)
+    SPREADSHEET_ID = match.group(1) if match else ""
+else:
     SPREADSHEET_ID = st.text_input("Spreadsheet ID", value=SPREADSHEET_ID)
     SHEET_NAME = st.text_input("Sheet Name", value=SHEET_NAME)
     CREDENTIALS_JSON = st.text_area("Google Service Account Credentials (JSON)", height=200)
@@ -101,5 +108,6 @@ with st.expander("🔐 Enter Google Sheets Credentials", expanded=True):
                     st.image(farming_tech_images[2], use_container_width=True, caption="Smart Farming Visualization")
                 else:
                     st.error("Google Sheet is empty or couldn't be read. Check Sheet name and structure.")
+
             except Exception as e:
                 st.error(f"Failed to load data: {e}")
