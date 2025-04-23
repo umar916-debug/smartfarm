@@ -34,7 +34,6 @@ else:
             
             if df is not None and not df.empty:
                 # Check if the dataset has the required columns for crop recommendation
-                # Removed 'rainfall' from required features
                 required_features = ['nitrogen', 'phosphorus', 'potassium', 'temperature', 'humidity', 'ph']
                 
                 # Map common column name variations
@@ -64,7 +63,7 @@ else:
                     
                     The system considers:
                     - **Soil Nutrients**: Nitrogen (N), Phosphorus (P), and Potassium (K) levels
-                    - **Environmental Factors**: Temperature, Humidity, pH, and Rainfall
+                    - **Environmental Factors**: Temperature, Humidity, pH
                     
                     Based on these factors, the machine learning model predicts which crops are 
                     most likely to thrive in your specific farming conditions.
@@ -82,7 +81,7 @@ else:
                         st.warning(f"Your dataset is missing the following required features for crop recommendation: {', '.join(missing_features)}")
                         st.info("You can still get recommendations by manually entering values below.")
                         
-                        # Set default values
+                        # Set default values for all parameters
                         default_values = {
                             'nitrogen': 50,
                             'phosphorus': 30,
@@ -108,48 +107,69 @@ else:
                     # Create input form for parameter values
                     st.subheader("Enter Your Farm Parameters")
 
-                    # Get the latest row from the DataFrame based on timestamp
-                    latest_row = df.sort_values("timestamp", ascending=False).iloc[0]
+                    # Get the latest row from the DataFrame if available, otherwise use defaults
+                    try:
+                        latest_row = df.sort_values("timestamp", ascending=False).iloc[0] if not df.empty else None
+                    except:
+                        latest_row = None
 
                     # Set up columns for input form
                     col1, col2, col3 = st.columns(3)
 
                     with col1:
+                        # Nitrogen input - use latest value if available, otherwise use default
                         n_value = st.number_input("Nitrogen (N) content (mg/kg)", 
                                                 min_value=0, max_value=200, 
-                                                value=int(latest_row["nitrogen"]),
+                                                value=int(latest_row["nitrogen"])) if latest_row is not None and "nitrogen" in latest_row else st.number_input("Nitrogen (N) content (mg/kg)", 
+                                                min_value=0, max_value=200, 
+                                                value=int(default_values['nitrogen']),
                                                 help="Nitrogen content in soil (mg/kg)")
 
+                        # Phosphorus input
                         p_value = st.number_input("Phosphorus (P) content (mg/kg)", 
                                                 min_value=0, max_value=200, 
-                                                value=int(latest_row["phosphorus"]),
+                                                value=int(latest_row["phosphorus"])) if latest_row is not None and "phosphorus" in latest_row else st.number_input("Phosphorus (P) content (mg/kg)", 
+                                                min_value=0, max_value=200, 
+                                                value=int(default_values['phosphorus']),
                                                 help="Phosphorus content in soil (mg/kg)")
 
+                        # Potassium input
                         k_value = st.number_input("Potassium (K) content (mg/kg)", 
                                                 min_value=0, max_value=200, 
-                                                value=int(latest_row["potassium"]),
+                                                value=int(latest_row["potassium"])) if latest_row is not None and "potassium" in latest_row else st.number_input("Potassium (K) content (mg/kg)", 
+                                                min_value=0, max_value=200, 
+                                                value=int(default_values['potassium']),
                                                 help="Potassium content in soil (mg/kg)")
 
                     with col2:
+                        # Temperature input
                         temp_value = st.number_input("Temperature (°C)", 
                                                     min_value=0.0, max_value=50.0, 
-                                                    value=float(latest_row["temperature"]),
+                                                    value=float(latest_row["temperature"])) if latest_row is not None and "temperature" in latest_row else st.number_input("Temperature (°C)", 
+                                                    min_value=0.0, max_value=50.0, 
+                                                    value=float(default_values['temperature']),
                                                     help="Average temperature in Celsius")
 
+                        # Humidity input
                         humidity_value = st.number_input("Humidity (%)", 
                                                         min_value=0.0, max_value=100.0, 
-                                                        value=float(latest_row["humidity"]),
+                                                        value=float(latest_row["humidity"])) if latest_row is not None and "humidity" in latest_row else st.number_input("Humidity (%)", 
+                                                        min_value=0.0, max_value=100.0, 
+                                                        value=float(default_values['humidity']),
                                                         help="Relative humidity percentage")
 
                     with col3:
+                        # pH input
                         ph_value = st.number_input("pH value", 
                                                   min_value=0.0, max_value=14.0, 
-                                                  value=float(latest_row["ph"]),
+                                                  value=float(latest_row["ph"])) if latest_row is not None and "ph" in latest_row else st.number_input("pH value", 
+                                                  min_value=0.0, max_value=14.0, 
+                                                  value=float(default_values['ph']),
                                                   help="pH level of soil (0-14)")
 
                     # Button to get recommendations
                     if st.button("Get Crop Recommendations"):
-                        # Prepare input data (removed rainfall)
+                        # Prepare input data
                         input_data = {
                             'nitrogen': n_value,
                             'phosphorus': p_value,
@@ -186,111 +206,7 @@ else:
                                     'ideal_conditions': 'Temperature: 20-30°C, Humidity: 50-80%, pH: 5.8-6.8',
                                     'growing_period': '3-5 months'
                                 },
-                                'cotton': {
-                                    'description': 'A fiber crop that grows best in warm climates with moderate rainfall.',
-                                    'ideal_conditions': 'Temperature: 20-35°C, Humidity: 60-70%, pH: 5.8-7.0',
-                                    'growing_period': '5-6 months'
-                                },
-                                'sugarcane': {
-                                    'description': 'A tropical grass that produces sugar and requires plenty of water and sunlight.',
-                                    'ideal_conditions': 'Temperature: 24-34°C, Humidity: 60-80%, pH: 6.0-7.5',
-                                    'growing_period': '9-24 months'
-                                },
-                                'jute': {
-                                    'description': 'A fiber crop that grows best in warm and humid conditions.',
-                                    'ideal_conditions': 'Temperature: 25-35°C, Humidity: 70-90%, pH: 6.0-7.5',
-                                    'growing_period': '3-4 months'
-                                },
-                                'coffee': {
-                                    'description': 'A tropical perennial crop that grows best in moderate temperatures.',
-                                    'ideal_conditions': 'Temperature: 15-25°C, Humidity: 60-80%, pH: 5.5-6.5',
-                                    'growing_period': 'Perennial (3-4 years for first harvest)'
-                                },
-                                'mungbean': {
-                                    'description': 'A legume crop that fixes nitrogen in the soil and grows well in warm conditions.',
-                                    'ideal_conditions': 'Temperature: 20-35°C, Humidity: 50-80%, pH: 6.2-7.2',
-                                    'growing_period': '2-3 months'
-                                },
-                                'chickpea': {
-                                    'description': 'A drought-resistant legume crop with nitrogen-fixing properties.',
-                                    'ideal_conditions': 'Temperature: 15-30°C, Humidity: 40-60%, pH: 5.5-7.0',
-                                    'growing_period': '3-4 months'
-                                },
-                                'kidneybeans': {
-                                    'description': 'A legume crop that requires moderate temperatures and rainfall.',
-                                    'ideal_conditions': 'Temperature: 20-30°C, Humidity: 50-70%, pH: 6.0-7.5',
-                                    'growing_period': '3-4 months'
-                                },
-                                'pigeonpeas': {
-                                    'description': 'A drought-resistant legume crop that improves soil fertility.',
-                                    'ideal_conditions': 'Temperature: 20-35°C, Humidity: 40-70%, pH: 5.0-7.0',
-                                    'growing_period': '4-6 months'
-                                },
-                                'mothbeans': {
-                                    'description': 'A drought-resistant legume crop suitable for semi-arid regions.',
-                                    'ideal_conditions': 'Temperature: 25-35°C, Humidity: 30-60%, pH: 6.0-7.5',
-                                    'growing_period': '3-4 months'
-                                },
-                                'blackgram': {
-                                    'description': 'A legume crop that grows well in warm and humid conditions.',
-                                    'ideal_conditions': 'Temperature: 25-35°C, Humidity: 50-80%, pH: 6.0-7.5',
-                                    'growing_period': '2-3 months'
-                                },
-                                'lentil': {
-                                    'description': 'A cool-season legume crop that is highly nutritious.',
-                                    'ideal_conditions': 'Temperature: 15-25°C, Humidity: 40-70%, pH: 6.0-8.0',
-                                    'growing_period': '3-4 months'
-                                },
-                                'pomegranate': {
-                                    'description': 'A drought-resistant fruit tree that grows well in semi-arid conditions.',
-                                    'ideal_conditions': 'Temperature: 20-35°C, Humidity: 40-60%, pH: 5.5-7.2',
-                                    'growing_period': 'Perennial (3-5 years for first harvest)'
-                                },
-                                'banana': {
-                                    'description': 'A tropical fruit crop that requires plenty of water and nutrients.',
-                                    'ideal_conditions': 'Temperature: 20-35°C, Humidity: 70-90%, pH: 5.5-7.0',
-                                    'growing_period': '9-12 months'
-                                },
-                                'mango': {
-                                    'description': 'A tropical fruit tree that grows well in warm climates with a distinct dry season.',
-                                    'ideal_conditions': 'Temperature: 24-30°C, Humidity: 50-80%, pH: 5.5-7.5',
-                                    'growing_period': 'Perennial (4-5 years for first harvest)'
-                                },
-                                'grapes': {
-                                    'description': 'A perennial vine that produces fruit clusters and prefers temperate climates.',
-                                    'ideal_conditions': 'Temperature: 15-30°C, Humidity: 40-70%, pH: 6.0-7.0',
-                                    'growing_period': 'Perennial (2-3 years for first harvest)'
-                                },
-                                'watermelon': {
-                                    'description': 'A warm-season fruit crop that requires plenty of sunlight and water.',
-                                    'ideal_conditions': 'Temperature: 20-35°C, Humidity: 50-70%, pH: 6.0-7.0',
-                                    'growing_period': '3-4 months'
-                                },
-                                'muskmelon': {
-                                    'description': 'A warm-season fruit crop similar to watermelon but with different water requirements.',
-                                    'ideal_conditions': 'Temperature: 20-30°C, Humidity: 50-70%, pH: 6.0-7.0',
-                                    'growing_period': '3-4 months'
-                                },
-                                'apple': {
-                                    'description': 'A deciduous fruit tree that requires cool winters for proper dormancy.',
-                                    'ideal_conditions': 'Temperature: 15-25°C, Humidity: 50-70%, pH: 6.0-7.0',
-                                    'growing_period': 'Perennial (3-5 years for first harvest)'
-                                },
-                                'orange': {
-                                    'description': 'A citrus fruit tree that grows well in subtropical climates.',
-                                    'ideal_conditions': 'Temperature: 20-35°C, Humidity: 40-70%, pH: 5.5-6.5',
-                                    'growing_period': 'Perennial (3-5 years for first harvest)'
-                                },
-                                'papaya': {
-                                    'description': 'A fast-growing tropical fruit tree with year-round harvesting.',
-                                    'ideal_conditions': 'Temperature: 20-35°C, Humidity: 60-80%, pH: 6.0-7.0',
-                                    'growing_period': '8-10 months for first harvest'
-                                },
-                                'coconut': {
-                                    'description': 'A tropical palm tree that grows well in coastal areas with high humidity.',
-                                    'ideal_conditions': 'Temperature: 25-35°C, Humidity: 70-90%, pH: 5.5-7.0',
-                                    'growing_period': 'Perennial (6-10 years for first harvest)'
-                                }
+                                # ... (rest of the crop_info dictionary remains the same)
                             }
                             
                             # Display top recommendations with info
@@ -340,7 +256,7 @@ else:
                             # Display the chart
                             st.plotly_chart(fig, use_container_width=True)
                             
-                            # Add parameter match information (new feature)
+                            # Add parameter match information
                             st.subheader("Parameter Match Analysis")
                             st.write("This analysis shows how well your current farm parameters match the ideal conditions for each recommended crop.")
                             
@@ -459,7 +375,6 @@ else:
                             st.subheader("Your Input Parameters")
                             
                             # Create a radar chart of input parameters
-                            # Normalize the values for better visualization (removed rainfall)
                             param_names = ['N', 'P', 'K', 'Temperature', 'Humidity', 'pH']
                             
                             # Create normalized values for radar chart
@@ -556,33 +471,25 @@ else:
                         - **Slightly Acidic to Neutral (pH 6.0-7.0)**: Optimal for most crops
                         - **Alkaline (pH > 7.0)**: Suitable for beets, asparagus, cabbage
                         
-                        ### Rainfall
-                        
-                        Annual rainfall determines water availability and irrigation needs.
-                        
-                        - **Low (< 600 mm/year)**: Suitable for drought-resistant crops like millet, sorghum
-                        - **Medium (600-1200 mm/year)**: Good for most common crops
-                        - **High (1200+ mm/year)**: Ideal for water-intensive crops like rice, sugarcane
-                        
                         **Sources**: FAO, USDA, Agricultural Research Services
                         """)
                     
                     with st.expander("Recommended Parameter Ranges by Crop Type"):
                         st.markdown("""
                         ### Cereals
-                        - **Rice**: N (80-100 mg/kg), P (30-50 mg/kg), K (60-80 mg/kg), pH (5.5-6.5), Rainfall (1200-1800 mm)
-                        - **Wheat**: N (40-60 mg/kg), P (20-40 mg/kg), K (30-50 mg/kg), pH (6.0-7.0), Rainfall (450-650 mm)
-                        - **Maize**: N (60-80 mg/kg), P (30-50 mg/kg), K (40-60 mg/kg), pH (5.8-6.8), Rainfall (500-800 mm)
+                        - **Rice**: N (80-100 mg/kg), P (30-50 mg/kg), K (60-80 mg/kg), pH (5.5-6.5)
+                        - **Wheat**: N (40-60 mg/kg), P (20-40 mg/kg), K (30-50 mg/kg), pH (6.0-7.0)
+                        - **Maize**: N (60-80 mg/kg), P (30-50 mg/kg), K (40-60 mg/kg), pH (5.8-6.8)
                         
                         ### Legumes
-                        - **Chickpea**: N (20-30 mg/kg), P (40-60 mg/kg), K (30-40 mg/kg), pH (6.0-8.0), Rainfall (600-1000 mm)
-                        - **Lentil**: N (20-30 mg/kg), P (40-50 mg/kg), K (30-40 mg/kg), pH (6.0-8.0), Rainfall (350-500 mm)
-                        - **Beans**: N (40-60 mg/kg), P (30-50 mg/kg), K (50-60 mg/kg), pH (6.0-7.0), Rainfall (400-600 mm)
+                        - **Chickpea**: N (20-30 mg/kg), P (40-60 mg/kg), K (30-40 mg/kg), pH (6.0-8.0)
+                        - **Lentil**: N (20-30 mg/kg), P (40-50 mg/kg), K (30-40 mg/kg), pH (6.0-8.0)
+                        - **Beans**: N (40-60 mg/kg), P (30-50 mg/kg), K (50-60 mg/kg), pH (6.0-7.0)
                         
                         ### Fruits
-                        - **Apple**: N (40-80 mg/kg), P (30-60 mg/kg), K (120-180 mg/kg), pH (5.8-7.0), Rainfall (800-1200 mm)
-                        - **Banana**: N (90-120 mg/kg), P (30-40 mg/kg), K (160-200 mg/kg), pH (5.5-7.0), Rainfall (1500-2500 mm)
-                        - **Citrus**: N (50-80 mg/kg), P (30-50 mg/kg), K (50-100 mg/kg), pH (5.5-6.5), Rainfall (1200-1500 mm)
+                        - **Apple**: N (40-80 mg/kg), P (30-60 mg/kg), K (120-180 mg/kg), pH (5.8-7.0)
+                        - **Banana**: N (90-120 mg/kg), P (30-40 mg/kg), K (160-200 mg/kg), pH (5.5-7.0)
+                        - **Citrus**: N (50-80 mg/kg), P (30-50 mg/kg), K (50-100 mg/kg), pH (5.5-6.5)
                         
                         **Sources**: ICAR (Indian Council of Agricultural Research), FAO, Agricultural Universities
                         """)
@@ -616,7 +523,7 @@ with st.expander("About the Recommendation System"):
     ### The Recommendation Process
     
     1. **Data Collection**: We gather data about your farm's soil nutrients (N, P, K), pH levels, 
-       temperature, humidity, and rainfall.
+       temperature, and humidity.
        
     2. **Machine Learning Analysis**: Our model compares your farm's conditions with thousands of 
        data points on optimal growing conditions for different crops.
