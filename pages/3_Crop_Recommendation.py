@@ -53,7 +53,7 @@ if 'google_sheets_configured' not in st.session_state or not st.session_state.go
 REFRESH_INTERVAL = 60
 if 'last_refresh' not in st.session_state or time.time() - st.session_state.last_refresh > REFRESH_INTERVAL:
     st.session_state.last_refresh = time.time()
-    st.experimental_rerun()
+    st.rerun()
 
 try:
     with st.spinner("Loading data and training model..."):
