@@ -31,8 +31,8 @@ try:
         )
 
     if df is not None and not df.empty:
-        # ✅ Handle timestamp (case-insensitive)
-        timestamp_col = next((col for col in df.columns if col.lower() == "timestamp"), None)
+        df.columns = df.columns.str.strip()  # 🛠️ Trim column names
+        timestamp_col = next((col for col in df.columns if col.strip().lower() == "timestamp"), None)
 
         if timestamp_col:
             latest = df.sort_values(by=timestamp_col, ascending=False).iloc[-1]
@@ -66,7 +66,7 @@ try:
         col6.metric("🌿 Potassium (K)", latest.get('K', 'N/A'))
         st.markdown("</div>", unsafe_allow_html=True)
 
-        st.button("🔄 Refresh Data", on_click=st.experimental_rerun)
+        st.button("🔄 Refresh Data", on_click=st.rerun)
 
     else:
         st.error("No data found. Please check your Google Sheet configuration.")
