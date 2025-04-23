@@ -9,19 +9,18 @@ st.set_page_config(
     layout="wide"
 )
 
-# Title
 st.markdown("""
 <h1 style='font-size: 3rem; font-weight: 700; color: #2e7d32;'>🌿 Live Farm Sensor Dashboard</h1>
 <p style='font-size: 1.1rem; color: #ccc;'>Real-time sensor readings from your smart farm</p>
 """, unsafe_allow_html=True)
 
-# Check session state
+# Google Sheets connection check
 if not all(k in st.session_state for k in ("spreadsheet_id", "sheet_name", "credentials_json")):
     st.warning("⚠️ Google Sheets connection not configured. Please go to the home page to set up your connection.")
     st.page_link("app.py", label="🏠 Go to Home Page")
     st.stop()
 
-# Fetch data
+# Try fetching and displaying data
 try:
     with st.spinner("Fetching the latest farm data..."):
         df = get_sheet_data(
@@ -31,26 +30,28 @@ try:
         )
 
     if df is not None and not df.empty:
-        # Normalize columns
+        # Normalize column names
         df.columns = df.columns.str.strip().str.lower()
+
         latest = df.iloc[-1]
 
-        # Get timestamp (optional)
+        # --- TIMESTAMP display ---
         timestamp_str = latest.get("timestamp", "Unknown")
         try:
-            timestamp = pd.to_datetime(timestamp_str).strftime('%Y-%m-%d %H:%M:%S')
+            parsed_timestamp = pd.to_datetime(timestamp_str)
+            timestamp = parsed_timestamp.strftime('%Y-%m-%d %H:%M:%S')
         except:
-            timestamp = timestamp_str
+            timestamp = "Unknown (timestamp format error)"
 
-        # Timestamp display
         st.markdown(f"""
-            <div style='font-size: 1.2rem; margin-top: 1rem; background-color: #f9f9f9; padding: 0.8rem 1rem; border-left: 5px solid #388e3c;'>
-                🕒 <strong>Last Updated:</strong>
-                <code style='background-color: #eef6f0; padding: 4px 8px; border-radius: 5px;'>{timestamp}</code>
+            <div style='display: flex; align-items: center; margin-top: 1.5rem; padding: 1rem 1.5rem; border-left: 5px solid #4CAF50; background-color: #f0f4f0; border-radius: 8px;'>
+                <span style='font-size: 1.5rem; margin-right: 0.75rem;'>🕒</span>
+                <span style='font-size: 1.2rem; font-weight: 600; color: #2e7d32;'>Last Updated:</span>
+                <span style='margin-left: 1rem; font-size: 1.1rem; font-family: monospace; background-color: #e0f2e9; padding: 4px 10px; border-radius: 6px; color: #2e7d32;'>{timestamp}</span>
             </div>
         """, unsafe_allow_html=True)
 
-        # Metrics
+        # --- METRICS display ---
         st.markdown("<div class='metric-container'>", unsafe_allow_html=True)
         col1, col2, col3 = st.columns(3)
         col1.metric("🌡️ Temperature", f"{latest.get('temperature', 'N/A')} °C")
@@ -63,9 +64,9 @@ try:
         col6.metric("🌿 Potassium (K)", latest.get('k', 'N/A'))
         st.markdown("</div>", unsafe_allow_html=True)
 
-        # Refresh
+        # --- REFRESH BUTTON ---
         if st.button("🔄 Refresh Data"):
-            st.rerun()
+            st.experimental_rerun()  # safe to use for now, works until st.rerun is public
 
     else:
         st.error("No data found in your Google Sheet.")
