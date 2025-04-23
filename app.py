@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 import os
 import json
-from assets.images import farm_crop_images, farming_tech_images, agricultural_sensor_images
+from assets.images import IoT-in-Agriculture-scaled, farming_tech_images, agricultural_sensor_images
 from utils.sheets_integration import authenticate_google_sheets, get_sheet_data
 
 # --- Google Sheets Config ---
