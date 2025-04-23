@@ -92,7 +92,7 @@ try:
     with tab1:
         default_values = {
             'nitrogen': 50, 'phosphorus': 30, 'potassium': 30,
-            'temperature': 25, 'humidity': 60, 'ph': 6.5
+            'temperature': 25.0, 'humidity': 60.0, 'ph': 6.5
         }
 
         latest_row = None
@@ -107,14 +107,14 @@ try:
         st.subheader("Enter Your Farm Parameters")
         c1, c2, c3 = st.columns(3)
         with c1:
-            n = st.number_input("Nitrogen (mg/kg)", 0, 200, int(get_param("nitrogen", 50)))
-            p = st.number_input("Phosphorus (mg/kg)", 0, 200, int(get_param("phosphorus", 30)))
-            k = st.number_input("Potassium (mg/kg)", 0, 200, int(get_param("potassium", 30)))
+            n = st.number_input("Nitrogen (mg/kg)", min_value=0, max_value=200, value=int(get_param("nitrogen", 50)))
+            p = st.number_input("Phosphorus (mg/kg)", min_value=0, max_value=200, value=int(get_param("phosphorus", 30)))
+            k = st.number_input("Potassium (mg/kg)", min_value=0, max_value=200, value=int(get_param("potassium", 30)))
         with c2:
-            temp = st.number_input("Temperature (°C)", 0.0, 50.0, get_param("temperature", 25))
-            hum = st.number_input("Humidity (%)", 0.0, 100.0, get_param("humidity", 60))
+            temp = st.number_input("Temperature (°C)", min_value=0.0, max_value=50.0, value=get_param("temperature", 25.0))
+            hum = st.number_input("Humidity (%)", min_value=0.0, max_value=100.0, value=get_param("humidity", 60.0))
         with c3:
-            ph = st.number_input("pH", 0.0, 14.0, get_param("ph", 6.5))
+            ph = st.number_input("pH", min_value=0.0, max_value=14.0, value=get_param("ph", 6.5))
 
         input_data = {
             'nitrogen': n, 'phosphorus': p, 'potassium': k,
@@ -170,7 +170,7 @@ except Exception as e:
     st.info("Please enter parameters manually.")
     display_general_recommendations({
         'nitrogen': 50, 'phosphorus': 30, 'potassium': 30,
-        'temperature': 25, 'humidity': 60, 'ph': 6.5
+        'temperature': 25.0, 'humidity': 60.0, 'ph': 6.5
     })
 
 # --- About Section ---
