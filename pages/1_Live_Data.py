@@ -10,10 +10,10 @@ st.set_page_config(
     layout="wide"
 )
 
-# Page title
+# Page title with style
 st.markdown("""
-    <h1 style='font-size: 2.8rem;'>🌿 Live Farm Sensor Dashboard</h1>
-    <p style='font-size: 1.1rem; color: gray;'>Real-time sensor readings from your smart farm</p>
+    <h1 style='font-size: 3rem; font-weight: 700; color: #2e7d32;'>🌿 Live Farm Sensor Dashboard</h1>
+    <p style='font-size: 1.1rem; color: #555;'>Real-time sensor readings from your smart farm</p>
 """, unsafe_allow_html=True)
 
 # Check Google Sheets config
@@ -46,9 +46,9 @@ try:
             timestamp = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
         st.markdown(f"""
-            <div style='font-size: 1.2rem; margin-top: 1rem;'>
+            <div style='font-size: 1.2rem; margin-top: 1rem; background-color: #f9f9f9; padding: 0.8rem 1rem; border-left: 5px solid #388e3c;'>
                 🕒 <strong>Last Updated:</strong>
-                <code style='background-color: #f0f0f0; padding: 4px 8px; border-radius: 5px;'>{timestamp}</code>
+                <code style='background-color: #eef6f0; padding: 4px 8px; border-radius: 5px;'>{timestamp}</code>
             </div>
         """, unsafe_allow_html=True)
 
@@ -102,7 +102,7 @@ try:
 
                 with cols[i]:
                     st.metric(
-                        label=f"{info['icon']} {name.replace('_', ' ').title()}",
+                        label=f"{info['icon']} <span style='font-weight: 600;'>{name.replace('_', ' ').title()}</span>",
                         value=formatted,
                         delta=delta,
                         help=f"Optimal: {info['range'][0]} - {info['range'][1]} {info['unit']}"
