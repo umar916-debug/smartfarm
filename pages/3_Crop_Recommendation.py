@@ -29,6 +29,10 @@ st.markdown("""
 
 st.title("🌾 Smart Crop Recommendation")
 
+# --- Helper: Clamp Values ---
+def clamp(value, min_val, max_val):
+    return max(min_val, min(value, max_val))
+
 # --- Helper: General Recommendation Logic ---
 def display_general_recommendations(params):
     st.subheader("General Crop Recommendations")
@@ -117,7 +121,6 @@ try:
         def get_param(name, default):
             return float(latest_row[name]) if latest_row is not None and name in latest_row else default
 
-        # Initialize/reset session state
         if 'input_params' not in st.session_state:
             st.session_state.input_params = {
                 k: get_param(k, default_values[k]) for k in default_values
@@ -126,21 +129,26 @@ try:
         st.subheader("📥 Enter Your Farm Parameters")
         c1, c2, c3 = st.columns(3)
         with c1:
-            n = st.number_input("Nitrogen (mg/kg)", min_value=0, max_value=200, value=int(st.session_state.input_params["nitrogen"]))
-            p = st.number_input("Phosphorus (mg/kg)", min_value=0, max_value=200, value=int(st.session_state.input_params["phosphorus"]))
-            k = st.number_input("Potassium (mg/kg)", min_value=0, max_value=200, value=int(st.session_state.input_params["potassium"]))
+            n = st.number_input("Nitrogen (mg/kg)", min_value=0, max_value=200,
+                                value=clamp(int(st.session_state.input_params["nitrogen"]), 0, 200))
+            p = st.number_input("Phosphorus (mg/kg)", min_value=0, max_value=200,
+                                value=clamp(int(st.session_state.input_params["phosphorus"]), 0, 200))
+            k = st.number_input("Potassium (mg/kg)", min_value=0, max_value=200,
+                                value=clamp(int(st.session_state.input_params["potassium"]), 0, 200))
         with c2:
-            temp = st.number_input("Temperature (°C)", min_value=0.0, max_value=50.0, value=st.session_state.input_params["temperature"])
-            hum = st.number_input("Humidity (%)", min_value=0.0, max_value=100.0, value=st.session_state.input_params["humidity"])
+            temp = st.number_input("Temperature (°C)", min_value=0.0, max_value=50.0,
+                                   value=clamp(st.session_state.input_params["temperature"], 0.0, 50.0))
+            hum = st.number_input("Humidity (%)", min_value=0.0, max_value=100.0,
+                                  value=clamp(st.session_state.input_params["humidity"], 0.0, 100.0))
         with c3:
-            ph = st.number_input("pH", min_value=0.0, max_value=14.0, value=st.session_state.input_params["ph"])
+            ph = st.number_input("pH", min_value=0.0, max_value=14.0,
+                                 value=clamp(st.session_state.input_params["ph"], 0.0, 14.0))
 
         input_data = {
             'nitrogen': n, 'phosphorus': p, 'potassium': k,
             'temperature': temp, 'humidity': hum, 'ph': ph
         }
 
-        # Save updated values
         st.session_state.input_params = input_data
 
         st.subheader("📊 Used Parameters")
