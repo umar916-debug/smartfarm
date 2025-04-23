@@ -15,6 +15,18 @@ st.set_page_config(
     layout="wide"
 )
 
+st.markdown("""
+<style>
+    .block-container {
+        padding-top: 1rem;
+        padding-bottom: 3rem;
+    }
+    .stButton>button {
+        width: 100%;
+    }
+</style>
+""", unsafe_allow_html=True)
+
 st.title("🌾 Smart Crop Recommendation")
 
 # --- Helper: General Recommendation Logic ---
@@ -31,7 +43,7 @@ def display_general_recommendations(params):
     elif 6.5 < pH <= 7.5:
         recs.append("🌻 **Neutral soil**: Wheat, Barley, Sunflowers, Cucumber")
     else:
-        recs.append("🦬 **Alkaline soil**: Asparagus, Beets, Cabbage")
+        recs.append("🥬 **Alkaline soil**: Asparagus, Beets, Cabbage")
 
     if temp < 15:
         recs.append("❄️ **Cool temperatures**: Lettuce, Kale, Spinach, Peas")
@@ -75,19 +87,20 @@ try:
     required_features = ['nitrogen', 'phosphorus', 'potassium', 'temperature', 'humidity', 'ph']
     missing_features = [feat for feat in required_features if feat not in df.columns]
 
-    st.subheader("How Crop Recommendations Work")
+    st.subheader("📊 How Crop Recommendations Work")
     col1, col2 = st.columns([3, 2])
     with col1:
-        st.write("""
+        st.markdown("""
         Our ML system analyzes your farm’s environment and nutrients to suggest optimal crops.
-        Features used:
-        - **Soil Nutrients**: Nitrogen (N), Phosphorus (P), Potassium (K)
-        - **Climate**: Temperature, Humidity, Soil pH
+
+        **Features used:**
+        - 🌱 **Soil Nutrients**: Nitrogen (N), Phosphorus (P), Potassium (K)
+        - 🌦️ **Climate**: Temperature, Humidity, Soil pH
         """)
     with col2:
-        st.image(farm_crop_images[5], use_column_width=True)
+        st.image(farm_crop_images[5], use_container_width=True)
 
-    tab1, tab2 = st.tabs(["Get Recommendations", "Parameter Info"])
+    tab1, tab2 = st.tabs(["🌾 Get Recommendations", "ℹ️ Parameter Info"])
 
     with tab1:
         default_values = {
@@ -104,7 +117,7 @@ try:
         def get_param(name, default):
             return float(latest_row[name]) if latest_row is not None and name in latest_row else default
 
-        st.subheader("Enter Your Farm Parameters")
+        st.subheader("📥 Enter Your Farm Parameters")
         c1, c2, c3 = st.columns(3)
         with c1:
             n = st.number_input("Nitrogen (mg/kg)", min_value=0, max_value=200, value=int(get_param("nitrogen", 50)))
@@ -121,18 +134,18 @@ try:
             'temperature': temp, 'humidity': hum, 'ph': ph
         }
 
-        st.subheader("Used Parameters")
-        st.dataframe(pd.DataFrame.from_dict(input_data, orient='index', columns=['Value']).style.format("{:.2f}"))
+        st.subheader("📊 Used Parameters")
+        st.dataframe(pd.DataFrame.from_dict(input_data, orient='index', columns=['Value']).style.format("{:.2f}"), use_container_width=True)
 
-        if st.button("Get Crop Recommendations"):
+        if st.button("🌱 Get Crop Recommendations"):
             if not missing_features:
                 try:
                     model, features, crops, accuracy = train_crop_recommendation_model(df)
-                    st.success(f"Model trained with {accuracy:.2f}% accuracy")
+                    st.success(f"✅ Model trained with {accuracy:.2f}% accuracy")
 
                     recs, probs, _ = predict_crop(model, features, crops, input_data)
 
-                    st.subheader("Recommended Crops")
+                    st.subheader("🌿 Recommended Crops")
                     cols = st.columns(min(3, len(recs)))
                     for i, (crop, prob) in enumerate(zip(recs, probs)):
                         with cols[i]:
@@ -140,7 +153,7 @@ try:
                             st.progress(prob)
                             st.write(f"Suitability: {prob:.1f}%")
 
-                    st.subheader("Suitability Chart")
+                    st.subheader("📈 Suitability Chart")
                     chart_data = pd.DataFrame({'Crop': recs, 'Suitability (%)': probs})
                     fig = px.bar(chart_data, x='Crop', y='Suitability (%)', color='Suitability (%)',
                                  color_continuous_scale='Viridis', title="Crop Suitability")
@@ -156,7 +169,7 @@ try:
 
     with tab2:
         st.markdown("""
-        ### Parameter Details
+        ### 🧪 Parameter Details
         - **Nitrogen (N)**: Encourages leafy growth.
         - **Phosphorus (P)**: Stimulates root development.
         - **Potassium (K)**: Improves disease resistance.
@@ -175,7 +188,7 @@ except Exception as e:
 
 # --- About Section ---
 st.divider()
-with st.expander("About the Recommendation System"):
+with st.expander("ℹ️ About the Recommendation System"):
     st.write("""
     This smart farming tool uses machine learning to personalize crop recommendations 
     based on your farm’s nutrient profile and climate conditions. 
