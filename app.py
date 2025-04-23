@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import os
 import json
+from PIL import Image
 from assets.images import farm_crop_images, farming_tech_images, agricultural_sensor_images
 from utils.sheets_integration import authenticate_google_sheets, get_sheet_data
 
@@ -26,27 +27,39 @@ st.markdown("""
         text-align: center;
         font-size: 3rem;
         font-weight: 700;
-        margin-bottom: 1rem;
-        text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
-    }
-    .metric-title {
-        font-size: 1.1rem;
-        font-weight: 500;
-        color: #81C784;
+        margin-bottom: 1.5rem;
+        text-shadow: 1px 1px 2px rgba(0,0,0,0.2);
     }
     .block-container {
         padding-top: 2rem;
+    }
+    .stDataFrame {
+        border: 1px solid #4CAF50;
+        border-radius: 10px;
+        overflow: hidden;
+    }
+    .metric-container {
+        margin-bottom: 2rem;
+    }
+    .css-1d391kg {  /* Makes dataframe font larger */
+        font-size: 16px !important;
+    }
+    .caption {
+        text-align: center;
+        color: #81C784;
+        font-size: 1rem;
+        margin-top: 0.5rem;
     }
 </style>
 """, unsafe_allow_html=True)
 
 # Title and header image
 st.markdown("<h1 class='main-header'>🌱 Smart Farming Dashboard</h1>", unsafe_allow_html=True)
-from PIL import Image
 
 try:
     image = Image.open("assets/IoT-in-Agriculture-scaled.jpg")
-    st.image(image, use_container_width=True, caption="Smart Farming - High Quality Agriculture")
+    st.image(image, use_container_width=True)
+    st.markdown("<div class='caption'>Smart Farming - High Quality Agriculture</div>", unsafe_allow_html=True)
 except Exception as e:
     st.warning("Header image could not be loaded. Make sure the image is placed inside the 'assets/' folder.")
 
@@ -66,13 +79,14 @@ with st.expander("🔐 Enter Google Sheets Credentials", expanded=True):
                     df = get_sheet_data(SPREADSHEET_ID, SHEET_NAME, CREDENTIALS_JSON)
 
                 if df is not None and not df.empty:
-                    st.success("Data loaded successfully from Google Sheets")
+                    st.success("✅ Data loaded successfully from Google Sheets")
                     st.image(farming_tech_images[1], use_container_width=True, caption="Live Sensor Feed")
                     st.dataframe(df.head(), use_container_width=True)
 
                     st.markdown("<h3 style='color:#4CAF50;'>📊 Latest Farm Data</h3>", unsafe_allow_html=True)
                     latest = df.sort_values("timestamp", ascending=False).iloc[0]
 
+                    st.markdown("<div class='metric-container'>", unsafe_allow_html=True)
                     col1, col2, col3 = st.columns(3)
                     col1.metric("🌡️ Temperature", f"{latest['temperature']} °C")
                     col2.metric("💧 Humidity", f"{latest['humidity']} %")
@@ -82,6 +96,7 @@ with st.expander("🔐 Enter Google Sheets Credentials", expanded=True):
                     col4.metric("🌿 Nitrogen (N)", latest['nitrogen'])
                     col5.metric("🌿 Phosphorus (P)", latest['phosphorus'])
                     col6.metric("🌿 Potassium (K)", latest['potassium'])
+                    st.markdown("</div>", unsafe_allow_html=True)
 
                     st.image(farming_tech_images[2], use_container_width=True, caption="Smart Farming Visualization")
                 else:
