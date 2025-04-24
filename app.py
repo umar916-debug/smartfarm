@@ -309,14 +309,23 @@ if st.session_state.google_sheets_configured:
     </div>
     """, unsafe_allow_html=True)
     
-    # Display sample data if available in a styled container
-    try:
-        with st.spinner("Loading sample data..."):
-            df = get_sheet_data(
-                st.session_state.spreadsheet_id,
-                st.session_state.sheet_name,
-                st.session_state.credentials_json
-            )
+   # Display sample data if available in a styled container
+try:
+    with st.spinner("Loading sample data..."):
+        # Fetching data from Google Sheets using the provided credentials and sheet details
+        df = get_sheet_data(
+            spreadsheet_id=st.session_state.spreadsheet_id,
+            sheet_name=st.session_state.sheet_name,
+            credentials_json=st.session_state.credentials_json
+        )
+        if df is not None and not df.empty:
+            # Display the dataframe in a styled container
+            st.dataframe(df.style.highlight_max(axis=0))  # Example of styling, you can customize it
+        else:
+            st.warning("No data available in the sheet.")
+except Exception as e:
+    st.error(f"An error occurred: {e}")
+
             if df is not None and not df.empty:
                 st.markdown("""
                 <div style="background-color: rgba(35, 35, 35, 0.5); padding: 15px; border-radius: 10px; margin: 10px 0;">
