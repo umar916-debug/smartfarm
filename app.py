@@ -1,6 +1,9 @@
 import streamlit as st
 import pandas as pd
 import os
+import json
+import gspread
+from google.oauth2.service_account import Credentials
 from utils.sheets_integration import authenticate_google_sheets
 from assets.images import farm_crop_images, farming_tech_images, agricultural_sensor_images
 
@@ -53,6 +56,45 @@ st.markdown("""
     }
 </style>
 """, unsafe_allow_html=True)
+
+def get_sheet_data(spreadsheet_id, sheet_name, credentials_json):
+    """Fetch data from Google Sheets and return as DataFrame"""
+    try:
+        # Authenticate with Google Sheets
+        scope = ["https://spreadsheets.google.com/feeds",
+                "https://www.googleapis.com/auth/drive"]
+        
+        if isinstance(credentials_json, str):
+            credentials_json = json.loads(credentials_json)
+            
+        creds = Credentials.from_service_account_info(credentials_json, scopes=scope)
+        client = gspread.authorize(creds)
+        
+        # Open the sheet
+        sheet = client.open_by_key(spreadsheet_id).worksheet(sheet_name)
+        
+        # Get all records
+        records = sheet.get_all_records()
+        
+        # Convert to DataFrame
+        df = pd.DataFrame(records)
+        
+        # Check for required columns
+        required_columns = ['Timestamp', 'Temperature', 'Humidity', 'N', 'P', 'K', 'pH']
+        if not all(col in df.columns for col in required_columns):
+            available_cols = df.columns.tolist()
+            st.error(f"Missing required columns. Sheet has: {available_cols}")
+            st.error(f"Expected columns: {required_columns}")
+            return None
+            
+        # Select only the required columns
+        df = df[required_columns]
+        
+        return df
+        
+    except Exception as e:
+        st.error(f"Error fetching sheet data: {str(e)}")
+        return None
 
 # Main app header with styled title
 st.markdown("<h1 class='main-header'>🌱 Smart Farming Dashboard</h1>", unsafe_allow_html=True)
@@ -122,12 +164,9 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-# Initialize session state - use st.session_state.get() to preserve values between sessions
+# Initialize session state
 if 'google_sheets_configured' not in st.session_state:
-    # Check if the config is stored in a file or load from previous session
     try:
-        import os
-        import json
         config_file = '.streamlit/sheets_config.json'
         if os.path.exists(config_file):
             with open(config_file, 'r') as f:
@@ -150,59 +189,21 @@ if 'google_sheets_configured' not in st.session_state:
         st.session_state.credentials_json = ""
         st.session_state.show_sheet_url = False
 
-# Toggle button with custom style
-st.markdown("""
-<style>
-    div[data-testid="stToggleButton"] label p {
-        font-size: 1rem;
-        color: #4CAF50 !important;
-    }
-</style>
-""", unsafe_allow_html=True)
-
 # Toggle between URL input and spreadsheet ID/sheet name
 toggle_col1, toggle_col2 = st.columns([3, 1])
 with toggle_col1:
     st.session_state.show_sheet_url = st.toggle("Use Google Sheet URL instead of ID", value=st.session_state.show_sheet_url)
-
-# Style the form container
-st.markdown("""
-<style>
-    div.stForm > div {
-        background-color: rgba(35, 35, 35, 0.5);
-        padding: 20px;
-        border-radius: 10px;
-        border: 1px solid #4CAF50;
-    }
-    div.stForm [data-baseweb="input"] {
-        border-radius: 4px;
-        border: 1px solid #4CAF50 !important;
-    }
-    div.stForm [data-baseweb="textarea"] {
-        border-radius: 4px;
-        border: 1px solid #4CAF50 !important;
-    }
-    div.stForm button {
-        background-color: #4CAF50 !important;
-        color: white !important;
-        border-radius: 4px !important;
-        padding: 0.5rem 1rem !important;
-        border: none !important;
-        font-weight: 500 !important;
-    }
-</style>
-""", unsafe_allow_html=True)
 
 # Google Sheets configuration form
 with st.form("sheets_config_form"):
     # Form title
     st.markdown("<h4 style='color: #4CAF50; margin-top: 0;'>Connection Details</h4>", unsafe_allow_html=True)
     
-    # Input for Google Sheet with icon
+    # Input for Google Sheet
     if st.session_state.show_sheet_url:
         sheet_url = st.text_input(
             "📄 Google Sheet URL",
-            help="The full URL of your Google Sheet, e.g., 'https://docs.google.com/spreadsheets/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms/edit'",
+            help="The full URL of your Google Sheet",
             value="" if st.session_state.spreadsheet_id == "" else f"https://docs.google.com/spreadsheets/d/{st.session_state.spreadsheet_id}/edit"
         )
         # Extract spreadsheet ID from URL
@@ -218,18 +219,18 @@ with st.form("sheets_config_form"):
     else:
         spreadsheet_id = st.text_input(
             "🆔 Google Spreadsheet ID", 
-            help="The ID from your Google Sheet URL, e.g., '1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms'",
+            help="The ID from your Google Sheet URL",
             value=st.session_state.spreadsheet_id
         )
     
-    # Sheet name input with icon
+    # Sheet name input
     sheet_name = st.text_input(
         "📑 Sheet Name", 
-        help="The name of the specific sheet tab (e.g., 'Sheet1')",
+        help="The name of the specific sheet tab",
         value=st.session_state.sheet_name
     )
     
-    # JSON credentials input with icon
+    # JSON credentials input
     credentials_json = st.text_area(
         "🔐 Google Service Account Credentials (JSON)",
         help="Paste your Google service account credentials in JSON format here",
@@ -237,10 +238,8 @@ with st.form("sheets_config_form"):
         height=150
     )
     
-    # Create 3 columns for better button positioning
-    _, btn_col, _ = st.columns([1, 1, 1])
-    with btn_col:
-        submitted = st.form_submit_button("🔄 Connect to Google Sheets")
+    # Form submit button
+    submitted = st.form_submit_button("🔄 Connect to Google Sheets")
     
     if submitted:
         # Validate inputs
@@ -251,53 +250,47 @@ with st.form("sheets_config_form"):
         elif not credentials_json:
             st.error("Please provide your Google service account credentials.")
         else:
-            # Try to authenticate and connect to the Google Sheets
+            # Validate JSON format
+            try:
+                creds_dict = json.loads(credentials_json)
+            except json.JSONDecodeError:
+                st.error("Invalid JSON credentials format")
+                st.stop()
+                
+            # Try to authenticate and connect
             try:
                 with st.spinner("Connecting to Google Sheets..."):
-                    # Authenticate with Google Sheets using the provided credentials
-                    service = authenticate_google_sheets(credentials_json)
+                    # Test the connection
+                    df = get_sheet_data(spreadsheet_id, sheet_name, creds_dict)
                     
-                    if service is None:
-                        st.error("Failed to authenticate with Google Sheets. Please check your credentials.")
-                    else:
-                        # Test connection by retrieving sheet metadata
-                        sheet_metadata = service.spreadsheets().get(spreadsheetId=spreadsheet_id).execute()
-                        sheet_titles = [sheet['properties']['title'] for sheet in sheet_metadata['sheets']]
+                    if df is not None:
+                        st.session_state.google_sheets_configured = True
+                        st.session_state.spreadsheet_id = spreadsheet_id
+                        st.session_state.sheet_name = sheet_name
+                        st.session_state.credentials_json = credentials_json
                         
-                        if sheet_name in sheet_titles:
-                            st.session_state.google_sheets_configured = True
-                            st.session_state.spreadsheet_id = spreadsheet_id
-                            st.session_state.sheet_name = sheet_name
-                            st.session_state.credentials_json = credentials_json
+                        # Save configuration
+                        try:
+                            os.makedirs('.streamlit', exist_ok=True)
+                            config_file = '.streamlit/sheets_config.json'
+                            config = {
+                                'configured': True,
+                                'spreadsheet_id': spreadsheet_id,
+                                'sheet_name': sheet_name,
+                                'credentials_json': credentials_json,
+                                'show_sheet_url': st.session_state.show_sheet_url
+                            }
+                            with open(config_file, 'w') as f:
+                                json.dump(config, f)
+                        except Exception as e:
+                            st.warning(f"Could not save configuration: {str(e)}")
                             
-                            # Save configuration to file for persistence
-                            try:
-                                import os
-                                import json
-                                # Ensure the .streamlit directory exists
-                                os.makedirs('.streamlit', exist_ok=True)
-                                config_file = '.streamlit/sheets_config.json'
-                                config = {
-                                    'configured': True,
-                                    'spreadsheet_id': spreadsheet_id,
-                                    'sheet_name': sheet_name,
-                                    'credentials_json': credentials_json,
-                                    'show_sheet_url': st.session_state.show_sheet_url
-                                }
-                                with open(config_file, 'w') as f:
-                                    json.dump(config, f)
-                            except Exception as e:
-                                print(f"Warning: Could not save configuration: {str(e)}")
-                                
-                            st.success(f"Successfully connected to Google Sheet '{sheet_metadata['properties']['title']}', tab '{sheet_name}'")
-                        else:
-                            st.error(f"Sheet tab '{sheet_name}' not found. Available tabs: {', '.join(sheet_titles)}")
+                        st.success(f"Successfully connected to Google Sheet, tab '{sheet_name}'")
             except Exception as e:
                 st.error(f"Failed to connect to Google Sheets: {str(e)}")
 
-# Display connection status with styled containers
+# Display connection status
 if st.session_state.google_sheets_configured:
-    # Custom styled success message
     st.markdown(f"""
     <div style="background-color: rgba(45, 45, 45, 0.7); padding: 15px; border-radius: 10px; 
         border-left: 5px solid #4CAF50; margin: 20px 0; display: flex; align-items: center;">
@@ -309,15 +302,16 @@ if st.session_state.google_sheets_configured:
     </div>
     """, unsafe_allow_html=True)
     
-    # Display sample data if available in a styled container
+    # Display sample data
     try:
         with st.spinner("Loading sample data..."):
+            creds_dict = json.loads(st.session_state.credentials_json)
             df = get_sheet_data(
                 st.session_state.spreadsheet_id,
                 st.session_state.sheet_name,
-                st.session_state.credentials_json
+                creds_dict
             )
-            if df is not None and not df.empty:
+            if df is not None:
                 st.markdown("""
                 <div style="background-color: rgba(35, 35, 35, 0.5); padding: 15px; border-radius: 10px; margin: 10px 0;">
                     <h4 style="color: #4CAF50; margin-top: 0;">Sample Data from Your Sheet</h4>
@@ -327,30 +321,23 @@ if st.session_state.google_sheets_configured:
     except Exception as e:
         st.error(f"Error loading sample data: {str(e)}")
     
-    # Add some space before the reset button
-    st.markdown("<div style='height: 20px;'></div>", unsafe_allow_html=True)
-    
-    # Centered reset button with custom styling
+    # Reset button
     col1, col2, col3 = st.columns([3, 1, 3])
     with col2:
         if st.button("Reset Connection", use_container_width=True):
-            # Remove configuration file if it exists
             try:
-                import os
                 config_file = '.streamlit/sheets_config.json'
                 if os.path.exists(config_file):
                     os.remove(config_file)
             except Exception as e:
-                print(f"Warning: Could not remove config file: {str(e)}")
+                st.warning(f"Could not remove config file: {str(e)}")
             
-            # Reset session state
             st.session_state.google_sheets_configured = False
             st.session_state.spreadsheet_id = ""
             st.session_state.sheet_name = ""
             st.session_state.credentials_json = ""
             st.rerun()
 else:
-    # Custom styled warning message
     st.markdown("""
     <div style="background-color: rgba(45, 45, 45, 0.7); padding: 15px; border-radius: 10px; 
         border-left: 5px solid #FFC107; margin: 20px 0; display: flex; align-items: center;">
@@ -361,44 +348,8 @@ else:
 
 # App footer
 st.divider()
-
-# About section with styled container
 st.markdown("""
-<div style="background-color: rgba(45, 45, 45, 0.7); padding: 25px; border-radius: 10px; margin: 20px 0; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);">
-    <h2 style="color: #4CAF50; margin-top: 0;">About Smart Farming Dashboard</h2>
-    <p style="font-size: 1.1rem; margin-bottom: 15px;">
-        This application integrates with your existing farm sensors through Google Sheets to provide
-        real-time monitoring, historical analysis, and intelligent crop recommendations.
-    </p>
-    <p>
-        The machine learning models used for recommendations are trained on your historical farm data
-        and consider various environmental factors specific to your farming context.
-    </p>
+<div style="text-align: center; color: #81C784; padding: 20px;">
+    <p>Smart Farming Dashboard v1.0 | Powered by Streamlit</p>
 </div>
 """, unsafe_allow_html=True)
-
-# Tech stack information in a styled expander
-with st.expander("Technical Information"):
-    st.markdown("""
-    <div style="padding: 10px; background-color: rgba(35, 35, 35, 0.5); border-radius: 5px;">
-        <h4 style="color: #4CAF50; margin-top: 0;">Technology Stack</h4>
-        <ul>
-            <li><strong style="color: #81C784;">Data Visualization:</strong> Streamlit, Plotly, Matplotlib</li>
-            <li><strong style="color: #81C784;">Data Processing:</strong> Pandas, NumPy</li>
-            <li><strong style="color: #81C784;">Machine Learning:</strong> Scikit-learn for crop recommendations</li>
-            <li><strong style="color: #81C784;">Data Integration:</strong> Google Sheets API for real-time sensor data</li>
-        </ul>
-    </div>
-    """, unsafe_allow_html=True)
-
-# Download section with styled container
-from utils.code_zip import download_code_zip
-st.markdown("""
-<div style="background-color: rgba(45, 45, 45, 0.7); padding: 25px; border-radius: 10px; margin: 20px 0; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); text-align: center;">
-    <h3 style="color: #4CAF50; margin-top: 0;">📥 Download Source Code</h3>
-    <p>Get the complete source code of this application for your reference or customization.</p>
-</div>
-""", unsafe_allow_html=True)
-
-# Download button styled separately because it needs to be interactive
-download_code_zip()
