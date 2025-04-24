@@ -64,78 +64,78 @@ else:
                 st.session_state.credentials_json
             )
 
-            if df is not None and not df.empty:
-                latest_data = df.iloc[-1].to_dict()
+        if df is not None and not df.empty:
+            # Ensure column names are lowercase and stripped
+            df.columns = df.columns.str.strip().str.lower()
+            latest_data = df.iloc[-1].to_dict()
 
-                # Timestamp
-                timestamp = latest_data.get('timestamp', datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
-                st.subheader(f"🕒 Last Updated: {timestamp}")
+            timestamp = latest_data.get('timestamp', datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
+            st.subheader(f"🕒 Last Updated: {timestamp}")
 
-                numeric_cols = df.select_dtypes(include=['float64', 'int64']).columns.tolist()
-                if 'timestamp' in numeric_cols:
-                    numeric_cols.remove('timestamp')
+            numeric_cols = df.select_dtypes(include=['float64', 'int64']).columns.tolist()
+            if 'timestamp' in numeric_cols:
+                numeric_cols.remove('timestamp')
 
-                metric_info = {
-                    'temperature': {'unit': '°C', 'good_range': (15, 30), 'icon': '🌡️'},
-                    'humidity': {'unit': '%', 'good_range': (40, 80), 'icon': '💧'},
-                    'soil_moisture': {'unit': '%', 'good_range': (30, 70), 'icon': '🌱'},
-                    'light_intensity': {'unit': 'lux', 'good_range': (10000, 50000), 'icon': '☀️'},
-                    'ph': {'unit': 'pH', 'good_range': (5.5, 7.5), 'icon': '⚗️'},
-                    'nitrogen': {'unit': 'mg/kg', 'good_range': (150, 300), 'icon': 'N'},
-                    'phosphorus': {'unit': 'mg/kg', 'good_range': (25, 50), 'icon': 'P'},
-                    'potassium': {'unit': 'mg/kg', 'good_range': (150, 300), 'icon': 'K'},
-                }
+            metric_info = {
+                'temperature': {'unit': '°C', 'good_range': (15, 30), 'icon': '🌡️'},
+                'humidity': {'unit': '%', 'good_range': (40, 80), 'icon': '💧'},
+                'soil_moisture': {'unit': '%', 'good_range': (30, 70), 'icon': '🌱'},
+                'light_intensity': {'unit': 'lux', 'good_range': (10000, 50000), 'icon': '☀️'},
+                'ph': {'unit': 'pH', 'good_range': (5.5, 7.5), 'icon': '⚗️'},
+                'nitrogen': {'unit': 'mg/kg', 'good_range': (150, 300), 'icon': '🧪 N'},
+                'phosphorus': {'unit': 'mg/kg', 'good_range': (25, 50), 'icon': '🧪 P'},
+                'potassium': {'unit': 'mg/kg', 'good_range': (150, 300), 'icon': '🧪 K'},
+            }
 
-                column_display_map = {
-                    'temp': 'temperature',
-                    'hum': 'humidity',
-                    'soil_moist': 'soil_moisture',
-                    'light': 'light_intensity',
-                    'n': 'nitrogen',
-                    'p': 'phosphorus',
-                    'k': 'potassium'
-                }
+            # Optional renaming map
+            column_display_map = {
+                'temp': 'temperature',
+                'hum': 'humidity',
+                'soil_moist': 'soil_moisture',
+                'light': 'light_intensity',
+                'n': 'nitrogen',
+                'p': 'phosphorus',
+                'k': 'potassium'
+            }
 
-                metric_cols = st.columns(min(4, len(numeric_cols)))
-                for i, col_name in enumerate(numeric_cols):
-                    display_name = column_display_map.get(col_name, col_name)
-                    info = metric_info.get(display_name, {'unit': '', 'good_range': (0, 100), 'icon': '📊'})
-                    value = latest_data.get(col_name, 'N/A')
+            metric_cols = st.columns(min(4, len(numeric_cols)))
+            for i, col_name in enumerate(numeric_cols):
+                display_name = column_display_map.get(col_name, col_name)
+                info = metric_info.get(display_name, {'unit': '', 'good_range': (0, 100), 'icon': '📊'})
+                value = latest_data.get(col_name, 'N/A')
 
-                    if isinstance(value, (int, float)):
-                        formatted_value = f"{value} {info['unit']}"
-                        if value < info['good_range'][0] or value > info['good_range'][1]:
-                            delta_color = "inverse"
-                            delta_desc = "Out of range"
-                        else:
-                            delta_color = "normal"
-                            delta_desc = "Optimal range"
-                        if len(df) > 1:
-                            prev_value = df.iloc[-2][col_name]
+                if isinstance(value, (int, float)):
+                    formatted_value = f"{value} {info['unit']}"
+                    in_range = info['good_range'][0] <= value <= info['good_range'][1]
+                    delta_desc = "Optimal range" if in_range else "Out of range"
+
+                    if len(df) > 1 and col_name in df.columns:
+                        prev_value = df.iloc[-2].get(col_name)
+                        if isinstance(prev_value, (int, float)):
                             delta = f"{value - prev_value:+.2f} {info['unit']}"
                         else:
                             delta = None
                     else:
-                        formatted_value = str(value)
                         delta = None
-                        delta_color = "off"
-                        delta_desc = ""
+                else:
+                    formatted_value = str(value)
+                    delta = None
+                    delta_desc = ""
 
-                    with metric_cols[i % len(metric_cols)]:
-                        st.markdown(f"""
-                        <div class="metric-box">
-                            <div class="metric-label">{info['icon']} {display_name.replace('_', ' ').title()}</div>
-                            <div class="metric-value">{formatted_value}</div>
-                            <div class="metric-delta">{delta or ''} <span style='color: gray;'>({delta_desc})</span></div>
-                        </div>
-                        """, unsafe_allow_html=True)
+                with metric_cols[i % len(metric_cols)]:
+                    st.markdown(f"""
+                    <div class="metric-box">
+                        <div class="metric-label">{info['icon']} {display_name.replace('_', ' ').title()}</div>
+                        <div class="metric-value">{formatted_value}</div>
+                        <div class="metric-delta">{delta or ''} <span style='color: gray;'>({delta_desc})</span></div>
+                    </div>
+                    """, unsafe_allow_html=True)
 
-                # Refresh button
-                if st.button("🔄 Refresh Data"):
-                    st.rerun()
-
-            else:
-                st.error("No data found. Please check your Google Sheet configuration.")
+            # Refresh button
+            if st.button("🔄 Refresh Data"):
+                st.rerun()
+        else:
+            st.error("No data found. Please check your Google Sheet content.")
 
     except Exception as e:
-        st.error(f"Error fetching data: {str(e)}")
+        st.error(f"❌ Error fetching data: {str(e)}")
