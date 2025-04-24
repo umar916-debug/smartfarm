@@ -1,141 +1,340 @@
 import streamlit as st
 import pandas as pd
-import datetime
+from datetime import datetime
+import time
 from utils.sheets_integration import get_sheet_data
 
 # Set page configuration
 st.set_page_config(
-    page_title="Live Farm Data | Smart Farming",
-    page_icon="📊",
-    layout="wide"
+    page_title="Smart Farm - Live Data",
+    page_icon="🌱",
+    layout="wide",
+    initial_sidebar_state="expanded"
 )
 
-# Inject custom CSS for styling
+# Custom CSS for styling
 st.markdown("""
-<style>
-    .block-container {
-        padding-top: 2rem;
-        padding-bottom: 2rem;
-        font-family: 'Segoe UI', sans-serif;
-    }
-    .metric-box {
-        background-color: #f9f9f9;
-        padding: 1rem;
-        border-radius: 15px;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-        margin-bottom: 1rem;
+    <style>
+    .main-header {
+        font-size: 2.5rem;
+        color: #2E7D32;
         text-align: center;
     }
-    .metric-label {
-        font-size: 1rem;
-        font-weight: 600;
-        color: #444;
+    .sub-header {
+        font-size: 1.5rem;
+        color: #43A047;
+        text-align: center;
+        margin-bottom: 2rem;
+    }
+    .metric-card {
+        border-radius: 0.5rem;
+        padding: 1rem;
+        background-color: white;
+        box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
+        margin-bottom: 1.5rem;
     }
     .metric-value {
-        font-size: 1.6rem;
+        font-size: 2rem;
         font-weight: bold;
-        color: #222;
+        margin: 0.5rem 0;
     }
-    .metric-delta {
+    .metric-label {
+        font-size: 1.2rem;
+        color: #555;
+    }
+    .metric-unit {
+        font-size: 1rem;
+        color: #777;
+    }
+    .metric-optimal {
+        color: #2E7D32;
         font-size: 0.9rem;
-        color: #888;
+        margin-top: 0.5rem;
     }
-    .stButton > button {
-        width: 100%;
-        border-radius: 8px;
-        font-weight: 600;
+    .metric-warning {
+        color: #FF9800;
+        font-size: 0.9rem;
+        margin-top: 0.5rem;
     }
-</style>
+    .metric-danger {
+        color: #D32F2F;
+        font-size: 0.9rem;
+        margin-top: 0.5rem;
+    }
+    .optimal-indicator {
+        display: inline-block;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background-color: #2E7D32;
+        margin-right: 0.5rem;
+    }
+    .warning-indicator {
+        display: inline-block;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background-color: #FF9800;
+        margin-right: 0.5rem;
+    }
+    .danger-indicator {
+        display: inline-block;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background-color: #D32F2F;
+        margin-right: 0.5rem;
+    }
+    .timestamp {
+        text-align: center;
+        font-size: 1rem;
+        color: #555;
+        margin-bottom: 1.5rem;
+    }
+    </style>
 """, unsafe_allow_html=True)
 
-# Page title
-st.title("📊 Live Farm Data Monitoring")
+# Check if configuration is set
+if ('spreadsheet_id' not in st.session_state or 
+    'sheet_name' not in st.session_state or 
+    'credentials_path' not in st.session_state or 
+    not st.session_state.credentials_uploaded):
+    st.error("Please configure your Google Sheets connection first.")
+    if st.button("Go to Configuration", use_container_width=True):
+        st.switch_page("app.py")
+    st.stop()
 
-# Check if Google Sheets is configured
-if 'google_sheets_configured' not in st.session_state or not st.session_state.google_sheets_configured:
-    st.warning("⚠️ Google Sheets connection not configured. Please go to the home page to set up your connection.")
-    st.page_link("app.py", label="Go to Home Page", icon="🏠")
-else:
+# Function to determine metric status
+def get_metric_status(value, thresholds):
+    if value is None:
+        return "danger"
     try:
-        with st.spinner("Fetching latest data from Google Sheets..."):
-            df = get_sheet_data(
-                st.session_state.spreadsheet_id,
-                st.session_state.sheet_name,
-                st.session_state.credentials_json
-            )
-
-        if df is not None and not df.empty:
-            # Ensure column names are lowercase and stripped
-            df.columns = df.columns.str.strip().str.lower()
-            latest_data = df.iloc[-1].to_dict()
-
-            timestamp = latest_data.get('timestamp', datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
-            st.subheader(f"🕒 Last Updated: {timestamp}")
-
-            numeric_cols = df.select_dtypes(include=['float64', 'int64']).columns.tolist()
-            if 'timestamp' in numeric_cols:
-                numeric_cols.remove('timestamp')
-
-            metric_info = {
-                'temperature': {'unit': '°C', 'good_range': (15, 30), 'icon': '🌡️'},
-                'humidity': {'unit': '%', 'good_range': (40, 80), 'icon': '💧'},
-                'soil_moisture': {'unit': '%', 'good_range': (30, 70), 'icon': '🌱'},
-                'light_intensity': {'unit': 'lux', 'good_range': (10000, 50000), 'icon': '☀️'},
-                'ph': {'unit': 'pH', 'good_range': (5.5, 7.5), 'icon': '⚗️'},
-                'nitrogen': {'unit': 'mg/kg', 'good_range': (150, 300), 'icon': '🧪 N'},
-                'phosphorus': {'unit': 'mg/kg', 'good_range': (25, 50), 'icon': '🧪 P'},
-                'potassium': {'unit': 'mg/kg', 'good_range': (150, 300), 'icon': '🧪 K'},
-            }
-
-            # Optional renaming map
-            column_display_map = {
-                'temp': 'temperature',
-                'hum': 'humidity',
-                'soil_moist': 'soil_moisture',
-                'light': 'light_intensity',
-                'n': 'nitrogen',
-                'p': 'phosphorus',
-                'k': 'potassium'
-            }
-
-            metric_cols = st.columns(min(4, len(numeric_cols)))
-            for i, col_name in enumerate(numeric_cols):
-                display_name = column_display_map.get(col_name, col_name)
-                info = metric_info.get(display_name, {'unit': '', 'good_range': (0, 100), 'icon': '📊'})
-                value = latest_data.get(col_name, 'N/A')
-
-                if isinstance(value, (int, float)):
-                    formatted_value = f"{value} {info['unit']}"
-                    in_range = info['good_range'][0] <= value <= info['good_range'][1]
-                    delta_desc = "Optimal range" if in_range else "Out of range"
-
-                    if len(df) > 1 and col_name in df.columns:
-                        prev_value = df.iloc[-2].get(col_name)
-                        if isinstance(prev_value, (int, float)):
-                            delta = f"{value - prev_value:+.2f} {info['unit']}"
-                        else:
-                            delta = None
-                    else:
-                        delta = None
-                else:
-                    formatted_value = str(value)
-                    delta = None
-                    delta_desc = ""
-
-                with metric_cols[i % len(metric_cols)]:
-                    st.markdown(f"""
-                    <div class="metric-box">
-                        <div class="metric-label">{info['icon']} {display_name.replace('_', ' ').title()}</div>
-                        <div class="metric-value">{formatted_value}</div>
-                        <div class="metric-delta">{delta or ''} <span style='color: gray;'>({delta_desc})</span></div>
-                    </div>
-                    """, unsafe_allow_html=True)
-
-            # Refresh button
-            if st.button("🔄 Refresh Data"):
-                st.rerun()
+        value_float = float(value)
+        if value_float >= thresholds[0] and value_float <= thresholds[1]:
+            return "optimal"
+        elif (value_float >= thresholds[0] - thresholds[2] and value_float < thresholds[0]) or \
+             (value_float > thresholds[1] and value_float <= thresholds[1] + thresholds[2]):
+            return "warning"
         else:
-            st.error("No data found. Please check your Google Sheet content.")
+            return "danger"
+    except (ValueError, TypeError):
+        return "danger"
 
-    except Exception as e:
-        st.error(f"❌ Error fetching data: {str(e)}")
+# Function to create a metric card
+def create_metric_card(label, value, unit, icon, thresholds, description):
+    status = get_metric_status(value, thresholds)
+    
+    try:
+        value_float = float(value) if value is not None else None
+        value_display = f"{value_float:.1f}" if value_float is not None else "N/A"
+    except (ValueError, TypeError):
+        value_display = "N/A"
+    
+    if status == "optimal":
+        status_html = f"""<div class="metric-optimal">
+                           <span class="optimal-indicator"></span>
+                           Optimal
+                        </div>"""
+    elif status == "warning":
+        status_html = f"""<div class="metric-warning">
+                           <span class="warning-indicator"></span>
+                           Warning
+                        </div>"""
+    else:
+        status_html = f"""<div class="metric-danger">
+                           <span class="danger-indicator"></span>
+                           Critical
+                        </div>"""
+    
+    html = f"""
+    <div class="metric-card">
+        <div class="metric-label">{icon} {label}</div>
+        <div class="metric-value">{value_display} <span class="metric-unit">{unit}</span></div>
+        {status_html}
+        <div style="font-size: 0.85rem; color: #777; margin-top: 0.5rem;">
+            {description}
+        </div>
+    </div>
+    """
+    return html
+
+# Main header
+st.markdown("<h1 class='main-header'>Smart Farm Monitoring</h1>", unsafe_allow_html=True)
+st.markdown("<h2 class='sub-header'>Live Sensor Data</h2>", unsafe_allow_html=True)
+
+# Create a refresh button
+col1, col2, col3 = st.columns([1, 2, 1])
+with col2:
+    refresh = st.button("🔄 Refresh Data", use_container_width=True)
+
+# Get data from Google Sheets
+@st.cache_data(ttl=300)  # Cache data for 5 minutes
+def load_data():
+    return get_sheet_data(
+        st.session_state.credentials_path,
+        st.session_state.spreadsheet_id,
+        st.session_state.sheet_name
+    )
+
+# Load data (refresh if button clicked)
+if refresh:
+    st.cache_data.clear()
+data = load_data()
+
+# Display data
+if data is not None and not data.empty:
+    # Get the latest row of data
+    latest_data = data.iloc[-1]
+    
+    # Display last updated timestamp
+    try:
+        # Try to parse the timestamp
+        timestamp = pd.to_datetime(latest_data.get('timestamp'))
+        formatted_timestamp = timestamp.strftime("%Y-%m-%d %H:%M:%S")
+        st.markdown(f"<div class='timestamp'>Last updated: {formatted_timestamp}</div>", unsafe_allow_html=True)
+    except:
+        st.markdown("<div class='timestamp'>Last updated: Unknown</div>", unsafe_allow_html=True)
+    
+    # Create metric cards
+    col1, col2, col3 = st.columns(3)
+    
+    with col1:
+        # Temperature
+        st.markdown(
+            create_metric_card(
+                "Temperature", 
+                latest_data.get('temperature'), 
+                "°C", 
+                "🌡️", 
+                [20, 30, 5],  # Optimal min, max, warning buffer
+                "Optimal range: 20-30°C"
+            ), 
+            unsafe_allow_html=True
+        )
+        
+        # Soil Moisture
+        st.markdown(
+            create_metric_card(
+                "Soil Moisture", 
+                latest_data.get('soil_moisture'), 
+                "%", 
+                "💧", 
+                [40, 70, 10],  # Optimal min, max, warning buffer
+                "Optimal range: 40-70%"
+            ), 
+            unsafe_allow_html=True
+        )
+        
+        # pH
+        st.markdown(
+            create_metric_card(
+                "pH Level", 
+                latest_data.get('pH'), 
+                "", 
+                "🧪", 
+                [6.0, 7.5, 0.5],  # Optimal min, max, warning buffer
+                "Optimal range: 6.0-7.5"
+            ), 
+            unsafe_allow_html=True
+        )
+    
+    with col2:
+        # Humidity
+        st.markdown(
+            create_metric_card(
+                "Humidity", 
+                latest_data.get('humidity'), 
+                "%", 
+                "💨", 
+                [60, 80, 10],  # Optimal min, max, warning buffer
+                "Optimal range: 60-80%"
+            ), 
+            unsafe_allow_html=True
+        )
+        
+        # Light Intensity
+        st.markdown(
+            create_metric_card(
+                "Light Intensity", 
+                latest_data.get('light_intensity'), 
+                "lux", 
+                "☀️", 
+                [10000, 30000, 5000],  # Optimal min, max, warning buffer
+                "Optimal range: 10000-30000 lux"
+            ), 
+            unsafe_allow_html=True
+        )
+        
+        # Nitrogen
+        st.markdown(
+            create_metric_card(
+                "Nitrogen", 
+                latest_data.get('nitrogen'), 
+                "ppm", 
+                "🌿", 
+                [150, 300, 50],  # Optimal min, max, warning buffer
+                "Optimal range: 150-300 ppm"
+            ), 
+            unsafe_allow_html=True
+        )
+    
+    with col3:
+        # Phosphorus
+        st.markdown(
+            create_metric_card(
+                "Phosphorus", 
+                latest_data.get('phosphorus'), 
+                "ppm", 
+                "🌱", 
+                [30, 60, 10],  # Optimal min, max, warning buffer
+                "Optimal range: 30-60 ppm"
+            ), 
+            unsafe_allow_html=True
+        )
+        
+        # Potassium
+        st.markdown(
+            create_metric_card(
+                "Potassium", 
+                latest_data.get('potassium'), 
+                "ppm", 
+                "🍃", 
+                [150, 300, 50],  # Optimal min, max, warning buffer
+                "Optimal range: 150-300 ppm"
+            ), 
+            unsafe_allow_html=True
+        )
+        
+        # Empty space for alignment
+        st.markdown("<div style='height: 215px;'></div>", unsafe_allow_html=True)
+    
+    # Display a note about interpreting the metrics
+    st.info("""
+        **How to interpret these metrics:**
+        - 🟢 **Optimal**: Sensor values are within the ideal range for plant growth.
+        - 🟠 **Warning**: Values are approaching critical thresholds, attention may be needed.
+        - 🔴 **Critical**: Values are outside acceptable ranges, immediate action required.
+    """)
+    
+else:
+    st.error("No data available. Please check your Google Sheets configuration and ensure the sheet contains data.")
+    
+    # Show sample data format
+    st.markdown("### Expected Data Format")
+    st.markdown("""
+    Your Google Sheet should have the following columns:
+    - `timestamp`: Date and time of the reading
+    - `temperature`: Temperature in °C
+    - `humidity`: Humidity in %
+    - `soil_moisture`: Soil moisture in %
+    - `light_intensity`: Light intensity in lux
+    - `pH`: pH level
+    - `nitrogen`: Nitrogen level in ppm
+    - `phosphorus`: Phosphorus level in ppm
+    - `potassium`: Potassium level in ppm
+    """)
+
+# Add a link back to the configuration page
+st.sidebar.title("Navigation")
+if st.sidebar.button("📝 Edit Configuration"):
+    st.switch_page("app.py")
