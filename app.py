@@ -309,7 +309,7 @@ if st.session_state.google_sheets_configured:
     </div>
     """, unsafe_allow_html=True)
     
-  # Display sample data if available in a styled container
+ # Display sample data if available in a styled container
 try:
     with st.spinner("Loading sample data..."):
         # Fetching data from Google Sheets using the provided credentials and sheet details
@@ -318,6 +318,7 @@ try:
             sheet_name=st.session_state.sheet_name,
             credentials_json=st.session_state.credentials_json
         )
+        
         if df is not None and not df.empty:
             # Display the dataframe in a styled container
             st.dataframe(df.style.highlight_max(axis=0))  # Example of styling, you can customize it
