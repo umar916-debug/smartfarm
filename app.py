@@ -326,10 +326,7 @@ try:
             st.warning("No data available in the sheet.")
 except Exception as e:
     st.error(f"An error occurred: {e}")
-
-    
-      
-        if df is not None and not df.empty:
+ if df is not None and not df.empty:
                 st.markdown("""
                 <div style="background-color: rgba(35, 35, 35, 0.5); padding: 15px; border-radius: 10px; margin: 10px 0;">
                     <h4 style="color: #4CAF50; margin-top: 0;">Sample Data from Your Sheet</h4>
